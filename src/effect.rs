@@ -54,6 +54,7 @@ pub enum Effect {
     TwinkleFadeRandom,
     Sparkle,
     FlashSparkle,
+    SparkleRandom,
     LarsonScanner,
     Comet,
     DualLarson,
@@ -125,6 +126,7 @@ impl Effect {
             Effect::TwinkleFadeRandom => "Twinkle Fade Random",
             Effect::Sparkle => "Sparkle",
             Effect::FlashSparkle => "Flash Sparkle",
+            Effect::SparkleRandom => "Sparkle Random",
             Effect::LarsonScanner => "Larson Scanner",
             Effect::Comet => "Comet",
             Effect::DualLarson => "Dual Larson",
@@ -147,7 +149,7 @@ impl Effect {
 
     /// Total number of available effects.
     pub const fn count() -> usize {
-        67
+        68
     }
 
     pub fn render(self, pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
@@ -278,6 +280,7 @@ impl Effect {
             Effect::TriFade => complex::trifade(pixels, state, config),
             Effect::Heartbeat => complex::heartbeat(pixels, state, config),
             Effect::RainbowFireworks => complex::rainbow_fireworks(pixels, state, config),
+            Effect::SparkleRandom => twinkle::sparkle_random(pixels, state, config),
         }
     }
 }

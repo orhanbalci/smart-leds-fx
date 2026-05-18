@@ -1,7 +1,7 @@
 #![no_std]
 
 pub mod effect;
-pub mod effects;
+pub(crate) mod effects;
 pub mod prelude;
 pub mod segment;
 pub mod utils;
