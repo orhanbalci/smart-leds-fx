@@ -29,30 +29,28 @@ pub struct Ws2812Fx<const N: usize> {
 
 impl<const N: usize> Ws2812Fx<N> {
     /// Creates an instance covering the whole strip with `Static` at full brightness.
-    /// Call [`start`](Self::start) before the main loop to begin animation.
+    /// Starts running immediately — call [`stop`](Self::stop) if you need to delay playback.
     pub fn new(brightness: u8) -> Self {
         let mut fx = Self {
             pixels: [RGB8 { r: 0, g: 0, b: 0 }; N],
             segments: Vec::new(),
             brightness,
-            running: false,
+            running: true,
             triggered: false,
         };
         let _ = fx.segments.push(Segment::new(0, N - 1, Effect::Static));
         fx
     }
-}
 
-impl<const N: usize> Ws2812Fx<N> {
     /// Start the animation engine.
     pub fn start(&mut self) {
         self.running = true;
     }
 
-    /// Stop the animation engine and blank the strip.
+    /// Stop the animation engine and clear the strip.
     pub fn stop(&mut self) {
         self.running = false;
-        self.strip_off();
+        self.clear();
     }
 
     /// Pause without clearing the display.
@@ -79,8 +77,8 @@ impl<const N: usize> Ws2812Fx<N> {
         self.triggered
     }
 
-    /// Set all pixels to black. Does not stop the engine.
-    pub fn strip_off(&mut self) {
+    /// Set all pixels to black without stopping the engine.
+    pub fn clear(&mut self) {
         for p in self.pixels.iter_mut() {
             *p = RGB8 { r: 0, g: 0, b: 0 };
         }
@@ -128,9 +126,7 @@ impl<const N: usize> Ws2812Fx<N> {
             b: (c.b as u16 * brightness as u16 / 255) as u8,
         })
     }
-}
 
-impl<const N: usize> Ws2812Fx<N> {
     pub fn set_brightness(&mut self, brightness: u8) {
         self.brightness = brightness;
     }
@@ -154,29 +150,21 @@ impl<const N: usize> Ws2812Fx<N> {
             .map(|c| c.r as u32 + c.g as u32 + c.b as u32)
             .sum()
     }
-}
 
-impl<const N: usize> Ws2812Fx<N> {
     /// Add a new segment to the pool. Returns `Err` if the pool (max 10) is full.
     pub fn add_segment(&mut self, segment: Segment) -> Result<(), Segment> {
         self.segments.push(segment).map_err(|s| s)
     }
 
-    /// Configure a segment by index. If `idx` equals the current segment count
-    /// and the pool is not full, a new segment is appended.
+    /// Configure a segment by index using a fully built [`Segment`].
+    /// If `idx` equals the current segment count and the pool is not full, appends it.
     /// Returns `false` if `idx` is out of range or the pool is full.
-    pub fn set_segment(&mut self, idx: usize, start: usize, stop: usize, effect: Effect) -> bool {
-        if let Some(seg) = self.segments.get_mut(idx) {
-            seg.start = start;
-            seg.stop = stop;
-            seg.effect = effect;
-            seg.state = Default::default();
-            seg.last_update = 0;
+    pub fn set_segment(&mut self, idx: usize, segment: Segment) -> bool {
+        if let Some(slot) = self.segments.get_mut(idx) {
+            *slot = segment;
             true
         } else if idx == self.segments.len() {
-            self.segments
-                .push(Segment::new(start, stop, effect))
-                .is_ok()
+            self.segments.push(segment).is_ok()
         } else {
             false
         }
@@ -207,9 +195,7 @@ impl<const N: usize> Ws2812Fx<N> {
     pub fn get_segment_mut(&mut self, idx: usize) -> Option<&mut Segment> {
         self.segments.get_mut(idx)
     }
-}
 
-impl<const N: usize> Ws2812Fx<N> {
     /// Set the effect for a segment, resetting its animation state.
     pub fn set_effect(&mut self, idx: usize, effect: Effect) {
         if let Some(seg) = self.segments.get_mut(idx) {
@@ -232,13 +218,15 @@ impl<const N: usize> Ws2812Fx<N> {
         self.segments.get(idx).map(|s| s.config.speed)
     }
 
-    pub fn increase_speed(&mut self, idx: usize, amount: u16) {
+    /// Decrease the step interval, making the animation play faster.
+    pub fn faster(&mut self, idx: usize, amount: u16) {
         if let Some(seg) = self.segments.get_mut(idx) {
             seg.config.speed = seg.config.speed.saturating_sub(amount);
         }
     }
 
-    pub fn decrease_speed(&mut self, idx: usize, amount: u16) {
+    /// Increase the step interval, making the animation play slower.
+    pub fn slower(&mut self, idx: usize, amount: u16) {
         if let Some(seg) = self.segments.get_mut(idx) {
             seg.config.speed = seg.config.speed.saturating_add(amount);
         }
@@ -275,9 +263,7 @@ impl<const N: usize> Ws2812Fx<N> {
     pub fn get_options(&self, idx: usize) -> Option<SegmentOptions> {
         self.segments.get(idx).map(|s| s.options)
     }
-}
 
-impl<const N: usize> Ws2812Fx<N> {
     /// Seed the PRNG state of every segment. Useful for reproducible patterns.
     pub fn set_random_seed(&mut self, seed: u32) {
         for seg in self.segments.iter_mut() {

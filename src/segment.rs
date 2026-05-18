@@ -66,4 +66,24 @@ impl Segment {
     pub fn len(&self) -> usize {
         self.stop.saturating_sub(self.start) + 1
     }
+
+    pub fn speed(mut self, ms: u16) -> Self {
+        self.config.speed = ms;
+        self
+    }
+
+    pub fn color(mut self, color: RGB8) -> Self {
+        self.config.colors[0] = color;
+        self
+    }
+
+    pub fn colors(mut self, colors: [RGB8; 3]) -> Self {
+        self.config.colors = colors;
+        self
+    }
+
+    pub fn options(mut self, options: SegmentOptions) -> Self {
+        self.options = options;
+        self
+    }
 }
