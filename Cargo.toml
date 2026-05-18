@@ -2,8 +2,17 @@
 name = "smart-leds-fx"
 version = "0.1.0"
 edition = "2024"
-description = "WS2812FX effect engine for the smart-leds ecosystem"
+rust-version = "1.85"
+description = "LED effect engine for the smart-leds ecosystem"
 license = "MIT"
+authors = ["orhanbalci <orhanbalci@gmail.com>"]
+repository = "https://github.com/orhanbalci/smart-leds-fx"
+homepage = "https://github.com/orhanbalci/smart-leds-fx"
+documentation = "https://docs.rs/smart-leds-fx"
+readme = "README.md"
+keywords = ["led", "ws2812", "no-std", "embedded", "smart-leds"]
+categories = ["embedded", "no-std", "hardware-support"]
+exclude = ["examples/", ".gitignore"]
 
 [dependencies]
 smart-leds-trait = "0.3"
