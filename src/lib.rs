@@ -20,7 +20,7 @@ const MAX_SEGMENTS: usize = 10;
 /// your main loop with the current timestamp, then feed [`iter`](Self::iter) to
 /// your [`SmartLedsWrite`](smart_leds_trait::SmartLedsWrite) driver when it
 /// returns `true`.
-pub struct Ws2812Fx<const N: usize> {
+pub struct StripFx<const N: usize> {
     pixels: [RGB8; N],
     segments: Vec<Segment, MAX_SEGMENTS>,
     brightness: u8,
@@ -28,7 +28,7 @@ pub struct Ws2812Fx<const N: usize> {
     triggered: bool,
 }
 
-impl<const N: usize> Ws2812Fx<N> {
+impl<const N: usize> StripFx<N> {
     /// Creates an instance covering the whole strip with `Static` at full brightness.
     /// Starts running immediately — call [`stop`](Self::stop) if you need to delay playback.
     pub fn new(brightness: u8) -> Self {

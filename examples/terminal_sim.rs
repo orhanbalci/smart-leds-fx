@@ -11,7 +11,6 @@ use smart_leds_fx::prelude::*;
 
 const NUM_LEDS: usize = 60;
 
-
 fn main() -> std::io::Result<()> {
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -25,7 +24,7 @@ fn main() -> std::io::Result<()> {
 }
 
 fn run(stdout: &mut impl Write) -> std::io::Result<()> {
-    let mut fx: Ws2812Fx<NUM_LEDS> = Ws2812Fx::new(200);
+    let mut fx: StripFx<NUM_LEDS> = StripFx::new(200);
     let mut idx = 0usize;
     apply_effect(&mut fx, Effect::ALL[idx]);
 
@@ -53,7 +52,11 @@ fn run(stdout: &mut impl Write) -> std::io::Result<()> {
 
         let now_ms = start.elapsed().as_millis() as u64;
         if fx.service(now_ms) {
-            queue!(stdout, cursor::MoveTo(0, 0), terminal::Clear(ClearType::CurrentLine))?;
+            queue!(
+                stdout,
+                cursor::MoveTo(0, 0),
+                terminal::Clear(ClearType::CurrentLine)
+            )?;
             write!(
                 stdout,
                 " [{:>2}/{}] {:<28}  ← → change  q quit",
@@ -79,7 +82,7 @@ fn run(stdout: &mut impl Write) -> std::io::Result<()> {
     Ok(())
 }
 
-fn apply_effect(fx: &mut Ws2812Fx<NUM_LEDS>, effect: Effect) {
+fn apply_effect(fx: &mut StripFx<NUM_LEDS>, effect: Effect) {
     fx.set_effect(0, effect);
     match effect {
         Effect::FireFlicker | Effect::FireFlickerSoft | Effect::FireFlickerIntense => {
