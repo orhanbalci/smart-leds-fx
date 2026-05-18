@@ -1,0 +1,14 @@
+[package]
+name = "smart-leds-fx"
+version = "0.1.0"
+edition = "2024"
+description = "WS2812FX effect engine for the smart-leds ecosystem"
+license = "MIT"
+
+[dependencies]
+smart-leds-trait = "0.3"
+heapless = "0.8"
+
+[dev-dependencies]
+# For host-side examples on std targets
+smart-leds = "0.4"
