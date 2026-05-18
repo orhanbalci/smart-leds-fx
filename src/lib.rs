@@ -3,6 +3,7 @@
 pub mod effect;
 pub mod effects;
 pub mod segment;
+pub mod utils;
 
 use heapless::Vec;
 use smart_leds_trait::RGB8;

@@ -8,6 +8,8 @@ license = "MIT"
 [dependencies]
 smart-leds-trait = "0.3"
 heapless = "0.8"
+micromath = "2"
+fastrand = { version = "2", default-features = false }
 
 [dev-dependencies]
 # For host-side examples on std targets
