@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{color_wheel, fade_out, next_rand, BLACK};
+use crate::utils::{BLACK, color_wheel, fade_out, next_rand};
 
 /// Knight Rider / Cylon scanner: one bright dot with a fading trail.
 /// `state.counter` = current step (0..seg_len*2-2), `state.aux` = call counter for color.
@@ -32,7 +32,11 @@ pub fn dual_larson(pixels: &mut [RGB8], state: &mut EffectState, config: &Effect
     if pos < len {
         pixels[pos] = config.colors[0];
         let mirror_pos = len.saturating_sub(1).saturating_sub(pos);
-        pixels[mirror_pos] = if config.colors[2] != BLACK { config.colors[2] } else { config.colors[0] };
+        pixels[mirror_pos] = if config.colors[2] != BLACK {
+            config.colors[2]
+        } else {
+            config.colors[0]
+        };
     }
 
     if going_forward {
@@ -102,21 +106,29 @@ pub fn multi_comet(pixels: &mut [RGB8], state: &mut EffectState, config: &Effect
     if c0 != 0xFFFF {
         pixels[(c0 as usize).min(pixels.len() - 1)] = config.colors[0];
         c0 += 1;
-        if c0 >= len { c0 = 0xFFFF; }
+        if c0 >= len {
+            c0 = 0xFFFF;
+        }
     } else {
         let rng = next_rand(state.aux);
         state.aux = rng;
-        if rng % len == 0 { c0 = 0; }
+        if rng % len == 0 {
+            c0 = 0;
+        }
     }
 
     if c1 != 0xFFFF {
         pixels[(c1 as usize).min(pixels.len() - 1)] = config.colors[2].try_or(config.colors[0]);
         c1 += 1;
-        if c1 >= len { c1 = 0xFFFF; }
+        if c1 >= len {
+            c1 = 0xFFFF;
+        }
     } else {
         let rng = next_rand(state.aux.wrapping_add(1));
         state.aux = rng;
-        if rng % len == 0 { c1 = 0; }
+        if rng % len == 0 {
+            c1 = 0;
+        }
     }
 
     state.counter = c0 | (c1 << 16);
@@ -128,6 +140,10 @@ trait OrElse {
 
 impl OrElse for RGB8 {
     fn try_or(self, fallback: Self) -> Self {
-        if self.r == 0 && self.g == 0 && self.b == 0 { fallback } else { self }
+        if self.r == 0 && self.g == 0 && self.b == 0 {
+            fallback
+        } else {
+            self
+        }
     }
 }

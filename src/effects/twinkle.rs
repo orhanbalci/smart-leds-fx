@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{color_wheel, fade_out, next_rand, rand_wheel_index, BLACK};
+use crate::utils::{BLACK, color_wheel, fade_out, next_rand, rand_wheel_index};
 
 pub fn twinkle(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
     let len = pixels.len() as u32;
@@ -124,7 +124,9 @@ pub fn sparkle_random(pixels: &mut [RGB8], state: &mut EffectState, _config: &Ef
         let (new_idx, new_rng) = rand_wheel_index(wheel_idx, rng);
         // Rebuild background
         let bg = color_wheel(new_idx.wrapping_add(128));
-        for p in pixels.iter_mut() { *p = bg; }
+        for p in pixels.iter_mut() {
+            *p = bg;
+        }
         let rng2 = next_rand(new_rng);
         let new_pos = (rng2 % len) as usize;
         pixels[new_pos] = color_wheel(new_idx);

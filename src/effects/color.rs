@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{color_blend, color_wheel, next_rand, WHITE};
+use crate::utils::{WHITE, color_blend, color_wheel, next_rand};
 
 pub fn static_color(pixels: &mut [RGB8], _state: &mut EffectState, config: &EffectConfig) {
     for pixel in pixels.iter_mut() {
@@ -10,7 +10,11 @@ pub fn static_color(pixels: &mut [RGB8], _state: &mut EffectState, config: &Effe
 }
 
 pub fn blink(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
-    let color = if state.counter % 2 == 0 { config.colors[0] } else { config.colors[1] };
+    let color = if state.counter % 2 == 0 {
+        config.colors[0]
+    } else {
+        config.colors[1]
+    };
     for pixel in pixels.iter_mut() {
         *pixel = color;
     }
@@ -82,7 +86,11 @@ pub fn hyper_sparkle(pixels: &mut [RGB8], state: &mut EffectState, config: &Effe
 pub fn multi_strobe(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
     let count = 2 * (config.speed as u32 / 100 + 1);
     if state.counter < count {
-        let color = if state.counter % 2 == 0 { config.colors[0] } else { config.colors[1] };
+        let color = if state.counter % 2 == 0 {
+            config.colors[0]
+        } else {
+            config.colors[1]
+        };
         for pixel in pixels.iter_mut() {
             *pixel = color;
         }

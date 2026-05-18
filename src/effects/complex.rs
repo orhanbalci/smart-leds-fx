@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{color_blend, color_wheel, fade_out, next_rand, sine8, BLACK};
+use crate::utils::{BLACK, color_blend, color_wheel, fade_out, next_rand, sine8};
 
 /// TwinkleFOX by Mark Kriegsman — deterministic per-LED sine-blended twinkle.
 /// Uses a fixed-seed LCG per LED so the pattern is stable without extra state.
@@ -18,9 +18,7 @@ pub fn twinkle_fox(pixels: &mut [RGB8], state: &mut EffectState, config: &Effect
         seed = seed.wrapping_mul(2053).wrapping_add(13849);
         let incr = (((seed.wrapping_add(seed >> 8)) & 0x07) as u8 + 1) * 2;
 
-        let blend_index = init.wrapping_add(
-            (call.wrapping_mul(incr as u16) & 0xFF) as u8,
-        );
+        let blend_index = init.wrapping_add((call.wrapping_mul(incr as u16) & 0xFF) as u8);
         let blend_amt = sine8(blend_index);
 
         let is_black = |c: RGB8| c.r == 0 && c.g == 0 && c.b == 0;
@@ -42,7 +40,11 @@ pub fn rain(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig)
     let rng = next_rand(state.aux);
     state.aux = rng;
 
-    let rain_color = if rng & 1 == 0 { config.colors[0] } else { config.colors[2] };
+    let rain_color = if rng & 1 == 0 {
+        config.colors[0]
+    } else {
+        config.colors[2]
+    };
 
     // Fade and add a random burst like fireworks.
     fade_out(pixels, BLACK, 128);
@@ -93,7 +95,13 @@ pub fn icu(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) 
     }
 
     // Move toward destination.
-    let new_pos = if dest > pos { pos + 1 } else if dest < pos { pos - 1 } else { pos };
+    let new_pos = if dest > pos {
+        pos + 1
+    } else if dest < pos {
+        pos - 1
+    } else {
+        pos
+    };
     state.counter = new_pos as u32;
 
     if new_pos < len && new_pos + half < len {
@@ -114,8 +122,16 @@ pub fn filler_up(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectCo
     let fill_level = (state.aux & 0xFFFF) as usize;
     let swapped = (state.aux >> 16) & 1 == 1;
 
-    let fg = if swapped { config.colors[1] } else { config.colors[0] };
-    let bg = if swapped { config.colors[0] } else { config.colors[1] };
+    let fg = if swapped {
+        config.colors[1]
+    } else {
+        config.colors[0]
+    };
+    let bg = if swapped {
+        config.colors[0]
+    } else {
+        config.colors[1]
+    };
 
     // Background
     for p in pixels.iter_mut() {
@@ -158,9 +174,12 @@ pub fn trifade(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConf
 
     let colors_main: [RGB8; 3] = config.colors;
     let colors_alt: [RGB8; 6] = [
-        config.colors[0], BLACK,
-        config.colors[1], BLACK,
-        config.colors[2], BLACK,
+        config.colors[0],
+        BLACK,
+        config.colors[1],
+        BLACK,
+        config.colors[2],
+        BLACK,
     ];
 
     let num = if use_black { 6usize } else { 3usize };
@@ -193,8 +212,8 @@ pub fn heartbeat(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectCo
 
     // Shift pixels from center toward edges (heartbeat expansion).
     if half > 1 {
-        pixels.copy_within(1..half, 0);                         // left half: shift left
-        pixels.copy_within(half..len - 1, half + 1);           // right half: shift right
+        pixels.copy_within(1..half, 0); // left half: shift left
+        pixels.copy_within(half..len - 1, half + 1); // right half: shift right
     }
 
     fade_out(pixels, BLACK, 32);
@@ -239,18 +258,50 @@ pub fn rainbow_fireworks(pixels: &mut [RGB8], state: &mut EffectState, _config: 
                         0x03 => 6,
                         _ => 0,
                     };
-                    if i >= dist { pixels[i - dist] = neighbor; }
-                    if i + dist < len { pixels[i + dist] = neighbor; }
+                    if i >= dist {
+                        pixels[i - dist] = neighbor;
+                    }
+                    if i + dist < len {
+                        pixels[i + dist] = neighbor;
+                    }
                 }
             };
         }
 
-        spawn_neighbor!(0x7F, RGB8 { r: 255, g: 127, b: 0 });  // orange
-        spawn_neighbor!(0x3F, RGB8 { r: 255, g: 255, b: 0 });  // yellow
-        spawn_neighbor!(0x1F, RGB8 { r: 0,   g: 255, b: 0 });  // green
-        spawn_neighbor!(0x0F, RGB8 { r: 0,   g: 0,   b: 255 }); // blue
-        spawn_neighbor!(0x07, RGB8 { r: 75,  g: 0,   b: 130 }); // indigo
-        spawn_neighbor!(0x03, RGB8 { r: 148, g: 0,   b: 211 }); // violet
+        spawn_neighbor!(
+            0x7F,
+            RGB8 {
+                r: 255,
+                g: 127,
+                b: 0
+            }
+        ); // orange
+        spawn_neighbor!(
+            0x3F,
+            RGB8 {
+                r: 255,
+                g: 255,
+                b: 0
+            }
+        ); // yellow
+        spawn_neighbor!(0x1F, RGB8 { r: 0, g: 255, b: 0 }); // green
+        spawn_neighbor!(0x0F, RGB8 { r: 0, g: 0, b: 255 }); // blue
+        spawn_neighbor!(
+            0x07,
+            RGB8 {
+                r: 75,
+                g: 0,
+                b: 130
+            }
+        ); // indigo
+        spawn_neighbor!(
+            0x03,
+            RGB8 {
+                r: 148,
+                g: 0,
+                b: 211
+            }
+        ); // violet
     }
 
     // Randomly ignite a new red pixel.

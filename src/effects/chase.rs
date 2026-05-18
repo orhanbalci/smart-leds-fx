@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{color_wheel, next_rand, rand_wheel_index, BLACK, WHITE};
+use crate::utils::{BLACK, WHITE, color_wheel, next_rand, rand_wheel_index};
 
 pub fn color_wipe(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
     let len = pixels.len();
@@ -50,7 +50,11 @@ pub fn color_sweep_random(pixels: &mut [RGB8], state: &mut EffectState, _config:
     }
 
     let color = color_wheel((state.aux & 0xFF) as u8);
-    let pos = if forward { step.min(len - 1) } else { len - 1 - step.min(len - 1) };
+    let pos = if forward {
+        step.min(len - 1)
+    } else {
+        len - 1 - step.min(len - 1)
+    };
 
     if step < len {
         pixels[pos] = color;
@@ -136,7 +140,11 @@ pub fn theater_chase_rainbow(pixels: &mut [RGB8], state: &mut EffectState, confi
     let color = color_wheel(state.aux as u8);
     let offset = state.counter as usize % 3;
     for (i, pixel) in pixels.iter_mut().enumerate() {
-        *pixel = if (i + offset) % 3 == 0 { color } else { config.colors[1] };
+        *pixel = if (i + offset) % 3 == 0 {
+            color
+        } else {
+            config.colors[1]
+        };
     }
     state.counter = state.counter.wrapping_add(1);
 }
@@ -286,7 +294,11 @@ pub fn chase_flash_random(pixels: &mut [RGB8], state: &mut EffectState, config: 
 /// Alternating color bands that shift along the strip.
 pub fn running(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
     let len = pixels.len();
-    let color = if state.counter as usize & 2 != 0 { config.colors[0] } else { config.colors[1] };
+    let color = if state.counter as usize & 2 != 0 {
+        config.colors[0]
+    } else {
+        config.colors[1]
+    };
     pixels.copy_within(0..len - 1, 1);
     pixels[0] = color;
     state.counter = state.counter.wrapping_add(1);

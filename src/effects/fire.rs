@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{fade_out, next_rand, BLACK};
+use crate::utils::{BLACK, fade_out, next_rand};
 
 /// Simulates fireworks: pixels fade and random bursts of `colors[0]` appear.
 pub fn fireworks(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {

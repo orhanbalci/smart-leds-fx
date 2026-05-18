@@ -2,25 +2,49 @@ use micromath::F32Ext;
 use smart_leds_trait::RGB8;
 
 // Common color constants
-pub const BLACK:  RGB8 = RGB8 { r: 0,   g: 0,   b: 0   };
-pub const WHITE:  RGB8 = RGB8 { r: 255, g: 255, b: 255 };
-pub const RED:    RGB8 = RGB8 { r: 255, g: 0,   b: 0   };
-pub const GREEN:  RGB8 = RGB8 { r: 0,   g: 255, b: 0   };
-pub const BLUE:   RGB8 = RGB8 { r: 0,   g: 0,   b: 255 };
-pub const PURPLE: RGB8 = RGB8 { r: 128, g: 0,   b: 128 };
-pub const ORANGE: RGB8 = RGB8 { r: 255, g: 165, b: 0   };
+pub const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
+pub const WHITE: RGB8 = RGB8 {
+    r: 255,
+    g: 255,
+    b: 255,
+};
+pub const RED: RGB8 = RGB8 { r: 255, g: 0, b: 0 };
+pub const GREEN: RGB8 = RGB8 { r: 0, g: 255, b: 0 };
+pub const BLUE: RGB8 = RGB8 { r: 0, g: 0, b: 255 };
+pub const PURPLE: RGB8 = RGB8 {
+    r: 128,
+    g: 0,
+    b: 128,
+};
+pub const ORANGE: RGB8 = RGB8 {
+    r: 255,
+    g: 165,
+    b: 0,
+};
 
 /// Maps 0–255 to a position on the RGB hue wheel.
 pub fn color_wheel(pos: u8) -> RGB8 {
     let pos = 255 - pos;
     if pos < 85 {
-        RGB8 { r: 255 - pos * 3, g: 0, b: pos * 3 }
+        RGB8 {
+            r: 255 - pos * 3,
+            g: 0,
+            b: pos * 3,
+        }
     } else if pos < 170 {
         let pos = pos - 85;
-        RGB8 { r: 0, g: pos * 3, b: 255 - pos * 3 }
+        RGB8 {
+            r: 0,
+            g: pos * 3,
+            b: 255 - pos * 3,
+        }
     } else {
         let pos = pos - 170;
-        RGB8 { r: pos * 3, g: 255 - pos * 3, b: 0 }
+        RGB8 {
+            r: pos * 3,
+            g: 255 - pos * 3,
+            b: 0,
+        }
     }
 }
 
@@ -54,7 +78,11 @@ pub fn fade_out(pixels: &mut [RGB8], target: RGB8, rate: u8) {
 /// Store the return value back into `EffectState::aux` to keep the chain going.
 /// Seeds itself to a non-zero value if `state` is 0.
 pub fn next_rand(state: u32) -> u32 {
-    let seed = if state == 0 { 0xdead_beef_u64 } else { state as u64 | (state as u64) << 32 };
+    let seed = if state == 0 {
+        0xdead_beef_u64
+    } else {
+        state as u64 | (state as u64) << 32
+    };
     fastrand::Rng::with_seed(seed).u32(..)
 }
 
