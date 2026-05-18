@@ -1,7 +1,11 @@
 use micromath::F32Ext;
 use smart_leds_trait::RGB8;
 
-// Common color constants
+/// Convenience constructor — shorter than writing `RGB8 { r, g, b }` inline.
+pub const fn rgb(r: u8, g: u8, b: u8) -> RGB8 {
+    RGB8 { r, g, b }
+}
+
 pub const BLACK: RGB8 = RGB8 { r: 0, g: 0, b: 0 };
 pub const WHITE: RGB8 = RGB8 {
     r: 255,

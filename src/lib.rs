@@ -2,14 +2,15 @@
 
 pub mod effect;
 pub mod effects;
+pub mod prelude;
 pub mod segment;
 pub mod utils;
 
 use heapless::Vec;
 use smart_leds_trait::RGB8;
 
-pub use effect::Effect;
-pub use segment::{EffectConfig, Segment, SegmentOptions};
+use crate::effect::Effect;
+use crate::segment::{Segment, SegmentOptions};
 
 const MAX_SEGMENTS: usize = 10;
 
