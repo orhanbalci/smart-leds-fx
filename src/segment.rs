@@ -29,6 +29,15 @@ impl Default for EffectConfig {
     }
 }
 
+/// Per-segment rendering options.
+#[derive(Clone, Copy, Default)]
+pub struct SegmentOptions {
+    /// Reverse the direction of directional effects.
+    pub reverse: bool,
+    /// Dot/block size for effects that support it (0 = 1 px, 1 = 2 px, 2 = 4 px, 3 = 8 px).
+    pub size: u8,
+}
+
 pub struct Segment {
     /// First pixel index on the strip (inclusive).
     pub start: usize,
@@ -36,6 +45,7 @@ pub struct Segment {
     pub stop: usize,
     pub effect: Effect,
     pub config: EffectConfig,
+    pub options: SegmentOptions,
     pub state: EffectState,
     pub last_update: u64,
 }
@@ -47,8 +57,13 @@ impl Segment {
             stop,
             effect,
             config: EffectConfig::default(),
+            options: SegmentOptions::default(),
             state: EffectState::default(),
             last_update: 0,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.stop.saturating_sub(self.start) + 1
     }
 }

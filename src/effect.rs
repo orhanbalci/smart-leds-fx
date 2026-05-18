@@ -6,30 +6,23 @@ use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, color_wheel, 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Effect {
-    // --- color ---
     Static,
     Blink,
     BlinkRainbow,
-    Strobe, // fast blink (same visual, intended for short speed)
+    Strobe,
     StrobeRainbow,
     Breath,
     Rainbow,
     Fade,
     HyperSparkle,
     MultiStrobe,
-
-    // --- rainbow ---
     RainbowCycle,
-
-    // --- wipe / scan ---
     ColorWipe,
     ColorWipeInv,
     ColorWipeRandom,
     ColorSweepRandom,
     Scan,
     DualScan,
-
-    // --- chase ---
     TricolorChase,
     CircusCombustus,
     TheaterChase,
@@ -44,8 +37,6 @@ pub enum Effect {
     ChaseBlackoutRainbow,
     ChaseFlash,
     ChaseFlashRandom,
-
-    // --- running ---
     RunningColor,
     RunningRedBlue,
     MerryChristmas,
@@ -53,36 +44,26 @@ pub enum Effect {
     RunningRandom,
     RunningRandom2,
     RunningLights,
-
-    // --- dynamic ---
     RandomColor,
     SingleDynamic,
     MultiDynamic,
     BlockDissolve,
-
-    // --- twinkle ---
     Twinkle,
     TwinkleRandom,
     TwinkleFade,
     TwinkleFadeRandom,
     Sparkle,
     FlashSparkle,
-
-    // --- scanner ---
     LarsonScanner,
     Comet,
     DualLarson,
     RainbowLarson,
     MultiComet,
-
-    // --- fire ---
     Fireworks,
     FireworksRandom,
     FireFlicker,
     FireFlickerSoft,
     FireFlickerIntense,
-
-    // --- complex ---
     TwinkleFox,
     Rain,
     Icu,
@@ -93,11 +74,86 @@ pub enum Effect {
 }
 
 impl Effect {
+    /// Human-readable name for display or debugging.
+    pub fn name(self) -> &'static str {
+        match self {
+            Effect::Static => "Static",
+            Effect::Blink => "Blink",
+            Effect::BlinkRainbow => "Blink Rainbow",
+            Effect::Strobe => "Strobe",
+            Effect::StrobeRainbow => "Strobe Rainbow",
+            Effect::Breath => "Breath",
+            Effect::Rainbow => "Rainbow",
+            Effect::Fade => "Fade",
+            Effect::HyperSparkle => "Hyper Sparkle",
+            Effect::MultiStrobe => "Multi Strobe",
+            Effect::RainbowCycle => "Rainbow Cycle",
+            Effect::ColorWipe => "Color Wipe",
+            Effect::ColorWipeInv => "Color Wipe Inv",
+            Effect::ColorWipeRandom => "Color Wipe Random",
+            Effect::ColorSweepRandom => "Color Sweep Random",
+            Effect::Scan => "Scan",
+            Effect::DualScan => "Dual Scan",
+            Effect::TricolorChase => "Tricolor Chase",
+            Effect::CircusCombustus => "Circus Combustus",
+            Effect::TheaterChase => "Theater Chase",
+            Effect::TheaterChaseRainbow => "Theater Chase Rainbow",
+            Effect::BicolorChase => "Bicolor Chase",
+            Effect::ChaseColor => "Chase Color",
+            Effect::ChaseBlackout => "Chase Blackout",
+            Effect::ChaseWhite => "Chase White",
+            Effect::ChaseRandom => "Chase Random",
+            Effect::ChaseRainbowWhite => "Chase Rainbow White",
+            Effect::ChaseRainbow => "Chase Rainbow",
+            Effect::ChaseBlackoutRainbow => "Chase Blackout Rainbow",
+            Effect::ChaseFlash => "Chase Flash",
+            Effect::ChaseFlashRandom => "Chase Flash Random",
+            Effect::RunningColor => "Running Color",
+            Effect::RunningRedBlue => "Running Red Blue",
+            Effect::MerryChristmas => "Merry Christmas",
+            Effect::Halloween => "Halloween",
+            Effect::RunningRandom => "Running Random",
+            Effect::RunningRandom2 => "Running Random 2",
+            Effect::RunningLights => "Running Lights",
+            Effect::RandomColor => "Random Color",
+            Effect::SingleDynamic => "Single Dynamic",
+            Effect::MultiDynamic => "Multi Dynamic",
+            Effect::BlockDissolve => "Block Dissolve",
+            Effect::Twinkle => "Twinkle",
+            Effect::TwinkleRandom => "Twinkle Random",
+            Effect::TwinkleFade => "Twinkle Fade",
+            Effect::TwinkleFadeRandom => "Twinkle Fade Random",
+            Effect::Sparkle => "Sparkle",
+            Effect::FlashSparkle => "Flash Sparkle",
+            Effect::LarsonScanner => "Larson Scanner",
+            Effect::Comet => "Comet",
+            Effect::DualLarson => "Dual Larson",
+            Effect::RainbowLarson => "Rainbow Larson",
+            Effect::MultiComet => "Multi Comet",
+            Effect::Fireworks => "Fireworks",
+            Effect::FireworksRandom => "Fireworks Random",
+            Effect::FireFlicker => "Fire Flicker",
+            Effect::FireFlickerSoft => "Fire Flicker (Soft)",
+            Effect::FireFlickerIntense => "Fire Flicker (Intense)",
+            Effect::TwinkleFox => "TwinkleFOX",
+            Effect::Rain => "Rain",
+            Effect::Icu => "ICU",
+            Effect::FillerUp => "Filler Up",
+            Effect::TriFade => "Tri Fade",
+            Effect::Heartbeat => "Heartbeat",
+            Effect::RainbowFireworks => "Rainbow Fireworks",
+        }
+    }
+
+    /// Total number of available effects.
+    pub const fn count() -> usize {
+        67
+    }
+
     pub fn render(self, pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
         use effects::*;
 
         match self {
-            // ── color ───────────────────────────────────────────────────────
             Effect::Static => color::static_color(pixels, state, config),
             Effect::Blink => color::blink(pixels, state, config),
             Effect::BlinkRainbow => color::blink_rainbow(pixels, state, config),
@@ -109,10 +165,8 @@ impl Effect {
             Effect::HyperSparkle => color::hyper_sparkle(pixels, state, config),
             Effect::MultiStrobe => color::multi_strobe(pixels, state, config),
 
-            // ── rainbow ─────────────────────────────────────────────────────
             Effect::RainbowCycle => rainbow::rainbow_cycle(pixels, state, config),
 
-            // ── wipe / scan ─────────────────────────────────────────────────
             Effect::ColorWipe => chase::color_wipe(pixels, state, config),
             Effect::ColorWipeInv => {
                 let mut cfg = *config;
@@ -124,7 +178,6 @@ impl Effect {
             Effect::Scan => chase::scan(pixels, state, config),
             Effect::DualScan => chase::dual_scan(pixels, state, config),
 
-            // ── chase ───────────────────────────────────────────────────────
             Effect::TricolorChase => chase::tricolor_chase(pixels, state, config),
             Effect::CircusCombustus => {
                 let mut cfg = *config;
@@ -168,7 +221,6 @@ impl Effect {
             }
             Effect::ChaseFlashRandom => chase::chase_flash_random(pixels, state, config),
 
-            // ── running ─────────────────────────────────────────────────────
             Effect::RunningColor => chase::running(pixels, state, config),
             Effect::RunningRedBlue => {
                 let mut cfg = *config;
@@ -189,13 +241,11 @@ impl Effect {
             Effect::RunningRandom2 => chase::running_random2(pixels, state, config),
             Effect::RunningLights => dynamic::running_lights(pixels, state, config),
 
-            // ── dynamic ─────────────────────────────────────────────────────
             Effect::RandomColor => dynamic::random_color(pixels, state, config),
             Effect::SingleDynamic => dynamic::single_dynamic(pixels, state, config),
             Effect::MultiDynamic => dynamic::multi_dynamic(pixels, state, config),
             Effect::BlockDissolve => dynamic::block_dissolve(pixels, state, config),
 
-            // ── twinkle ─────────────────────────────────────────────────────
             Effect::Twinkle => twinkle::twinkle(pixels, state, config),
             Effect::TwinkleRandom => twinkle::twinkle_random(pixels, state, config),
             Effect::TwinkleFade => twinkle::twinkle_fade(pixels, state, config),
@@ -203,14 +253,12 @@ impl Effect {
             Effect::Sparkle => twinkle::sparkle(pixels, state, config),
             Effect::FlashSparkle => twinkle::flash_sparkle(pixels, state, config),
 
-            // ── scanner ─────────────────────────────────────────────────────
             Effect::LarsonScanner => scanner::larson_scanner(pixels, state, config),
             Effect::Comet => scanner::comet(pixels, state, config),
             Effect::DualLarson => scanner::dual_larson(pixels, state, config),
             Effect::RainbowLarson => scanner::rainbow_larson(pixels, state, config),
             Effect::MultiComet => scanner::multi_comet(pixels, state, config),
 
-            // ── fire ────────────────────────────────────────────────────────
             Effect::Fireworks => fire::fireworks(pixels, state, config),
             Effect::FireworksRandom => {
                 let mut cfg = *config;
@@ -223,7 +271,6 @@ impl Effect {
             Effect::FireFlickerSoft => fire::fire_flicker_soft(pixels, state, config),
             Effect::FireFlickerIntense => fire::fire_flicker_intense(pixels, state, config),
 
-            // ── complex ─────────────────────────────────────────────────────
             Effect::TwinkleFox => complex::twinkle_fox(pixels, state, config),
             Effect::Rain => complex::rain(pixels, state, config),
             Effect::Icu => complex::icu(pixels, state, config),
