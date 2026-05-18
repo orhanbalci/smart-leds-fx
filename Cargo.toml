@@ -12,5 +12,5 @@ micromath = "2"
 fastrand = { version = "2", default-features = false }
 
 [dev-dependencies]
-# For host-side examples on std targets
 smart-leds = "0.4"
+crossterm = "0.28"

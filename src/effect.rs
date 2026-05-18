@@ -147,9 +147,84 @@ impl Effect {
         }
     }
 
+    /// All available effects in definition order.
+    pub const ALL: &'static [Effect] = &[
+        Effect::Static,
+        Effect::Blink,
+        Effect::BlinkRainbow,
+        Effect::Strobe,
+        Effect::StrobeRainbow,
+        Effect::Breath,
+        Effect::Rainbow,
+        Effect::Fade,
+        Effect::HyperSparkle,
+        Effect::MultiStrobe,
+        Effect::RainbowCycle,
+        Effect::ColorWipe,
+        Effect::ColorWipeInv,
+        Effect::ColorWipeRandom,
+        Effect::ColorSweepRandom,
+        Effect::Scan,
+        Effect::DualScan,
+        Effect::TricolorChase,
+        Effect::CircusCombustus,
+        Effect::TheaterChase,
+        Effect::TheaterChaseRainbow,
+        Effect::BicolorChase,
+        Effect::ChaseColor,
+        Effect::ChaseBlackout,
+        Effect::ChaseWhite,
+        Effect::ChaseRandom,
+        Effect::ChaseRainbowWhite,
+        Effect::ChaseRainbow,
+        Effect::ChaseBlackoutRainbow,
+        Effect::ChaseFlash,
+        Effect::ChaseFlashRandom,
+        Effect::RunningColor,
+        Effect::RunningRedBlue,
+        Effect::MerryChristmas,
+        Effect::Halloween,
+        Effect::RunningRandom,
+        Effect::RunningRandom2,
+        Effect::RunningLights,
+        Effect::RandomColor,
+        Effect::SingleDynamic,
+        Effect::MultiDynamic,
+        Effect::BlockDissolve,
+        Effect::Twinkle,
+        Effect::TwinkleRandom,
+        Effect::TwinkleFade,
+        Effect::TwinkleFadeRandom,
+        Effect::Sparkle,
+        Effect::FlashSparkle,
+        Effect::SparkleRandom,
+        Effect::LarsonScanner,
+        Effect::Comet,
+        Effect::DualLarson,
+        Effect::RainbowLarson,
+        Effect::MultiComet,
+        Effect::Fireworks,
+        Effect::FireworksRandom,
+        Effect::FireFlicker,
+        Effect::FireFlickerSoft,
+        Effect::FireFlickerIntense,
+        Effect::TwinkleFox,
+        Effect::Rain,
+        Effect::Icu,
+        Effect::FillerUp,
+        Effect::TriFade,
+        Effect::Heartbeat,
+        Effect::RainbowFireworks,
+    ];
+
     /// Total number of available effects.
     pub const fn count() -> usize {
-        68
+        Self::ALL.len()
+    }
+
+    /// Iterator over every effect variant.
+    pub fn iter() -> impl Iterator<Item = Effect> {
+        Self::ALL.iter().copied()
     }
 
     pub fn render(self, pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
