@@ -1,6 +1,6 @@
 [package]
 name = "smart-leds-fx"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 description = "LED effect engine for the smart-leds ecosystem"
@@ -20,6 +20,10 @@ heapless = "0.8"
 lib8tion = "0.1"
 fastrand = { version = "2", default-features = false }
 color8 = { version = "0.1", optional = true }
+
+[package.metadata.docs.rs]
+# Document `Pixel` for `color8::Crgb` too.
+all-features = true
 
 [features]
 # Implement `Pixel` for `color8::Crgb`, so effects render straight into

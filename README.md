@@ -41,7 +41,7 @@ Your code calls `service(now_ms)` each loop iteration. When it returns `true`, a
 
 ```toml
 [dependencies]
-smart-leds-fx = "0.1"
+smart-leds-fx = "0.2"
 ```
 
 ```rust
@@ -138,7 +138,7 @@ to render straight into [`color8`](https://crates.io/crates/color8) `Crgb`
 pixels:
 
 ```toml
-smart-leds-fx = { version = "0.1", features = ["color8"] }
+smart-leds-fx = { version = "0.2", features = ["color8"] }
 ```
 
 ---
@@ -167,7 +167,7 @@ The simulator renders each LED as a colored `██` block using 24-bit ANSI col
 
 ```toml
 [dependencies]
-smart-leds-fx = "0.1"
+smart-leds-fx = "0.2"
 ws2812-esp32-rmt-driver = "0.5"
 esp-hal = { version = "0.18", features = ["esp32s3"] }
 ```

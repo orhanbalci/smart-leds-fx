@@ -6,7 +6,12 @@ use crate::pixel::Pixel;
 use crate::segment::{EffectConfig, EffectState};
 use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, color_wheel, next_rand};
 
+/// A built-in effect.
+///
+/// New effects may be added in minor releases, so a `match` over effects needs
+/// a wildcard arm; [`Effect::ALL`] always lists every one.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Effect {
     Static,
     Blink,

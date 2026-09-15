@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-09-15
 
 ### Added
 
@@ -24,6 +24,8 @@
 
 ### Changed
 
+- **Breaking:** `Effect` is `#[non_exhaustive]`, so effects can be added in
+  minor releases. A `match` over every variant needs a wildcard arm.
 - Strobe and Strobe Rainbow are real strobes: a single-step flash followed by
   a pause. They drew the same frames as Blink and Blink Rainbow before.
 - The sine used by Running Lights and TwinkleFOX is integer-only
@@ -40,8 +42,8 @@
 
 ### Unchanged
 
-- The 0.1 public API. Every other effect draws exactly the frames it drew in
-  0.1.0.
+- The rest of the 0.1 public API. Every effect not listed above draws exactly
+  the frames it drew in 0.1.0.
 
 ## 0.1.0
 
