@@ -1,7 +1,7 @@
 use smart_leds_trait::RGB8;
 
 use crate::effects;
-use crate::params::Params;
+use crate::params::{Params, Setting};
 use crate::pixel::Pixel;
 use crate::segment::{EffectConfig, EffectState};
 use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, next_rand};
@@ -79,6 +79,11 @@ pub enum Effect {
     TriFade,
     Heartbeat,
     RainbowFireworks,
+    Sine,
+    Bpm,
+    Percent,
+    Wavesins,
+    SolidPattern,
 }
 
 impl Effect {
@@ -151,6 +156,11 @@ impl Effect {
             Effect::TriFade => "Tri Fade",
             Effect::Heartbeat => "Heartbeat",
             Effect::RainbowFireworks => "Rainbow Fireworks",
+            Effect::Sine => "Sine",
+            Effect::Bpm => "Bpm",
+            Effect::Percent => "Percent",
+            Effect::Wavesins => "Wavesins",
+            Effect::SolidPattern => "Solid Pattern",
         }
     }
 
@@ -222,6 +232,11 @@ impl Effect {
         Effect::TriFade,
         Effect::Heartbeat,
         Effect::RainbowFireworks,
+        Effect::Sine,
+        Effect::Bpm,
+        Effect::Percent,
+        Effect::Wavesins,
+        Effect::SolidPattern,
     ];
 
     /// Total number of available effects.
@@ -232,6 +247,46 @@ impl Effect {
     /// Iterator over every effect variant.
     pub fn iter() -> impl Iterator<Item = Effect> {
         Self::ALL.iter().copied()
+    }
+
+    /// The settings this effect reads, beyond its colors, palette, grouping,
+    /// direction and — for time-driven effects — the clock.
+    ///
+    /// For callers that map controls of their own onto effects: a control
+    /// mapped to a setting not listed here changes nothing.
+    pub const fn settings(self) -> &'static [Setting] {
+        match self {
+            Effect::Strobe
+            | Effect::StrobeRainbow
+            | Effect::HyperSparkle
+            | Effect::RainbowCycle
+            | Effect::LarsonScanner
+            | Effect::DualLarson
+            | Effect::RainbowLarson
+            | Effect::Comet
+            | Effect::MultiComet
+            | Effect::TwinkleFade
+            | Effect::TwinkleFadeRandom
+            | Effect::Fireworks
+            | Effect::FireworksRandom
+            | Effect::FireFlicker
+            | Effect::FireFlickerSoft
+            | Effect::FireFlickerIntense
+            | Effect::Rain
+            | Effect::Heartbeat => &[Setting::Intensity],
+            Effect::Sine => &[Setting::Rate, Setting::Scale],
+            Effect::Bpm => &[Setting::Rate],
+            Effect::Percent => &[Setting::Fill, Setting::OneColor],
+            Effect::Wavesins => &[
+                Setting::Rate,
+                Setting::Variation,
+                Setting::PaletteStart,
+                Setting::PaletteSpan,
+                Setting::PaletteStep,
+            ],
+            Effect::SolidPattern => &[Setting::Width, Setting::Gap],
+            _ => &[],
+        }
     }
 
     /// Renders one step of this effect into `pixels`.
@@ -248,7 +303,9 @@ impl Effect {
     /// buffer held after the previous step — many effects fade, shift or
     /// restore those pixels — so pass the same buffer and `state` every time.
     /// The caller decides when to step; [`StripFx`](crate::StripFx) steps a
-    /// segment every [`Params::speed`] milliseconds.
+    /// segment every [`Params::speed`] milliseconds. Time-driven effects (Sine,
+    /// Bpm, Wavesins) draw from [`Params::now_ms`] instead of a step count, so
+    /// stepping them every frame makes them move smoothly.
     ///
     /// Grouping ([`Params::size`]) and direction ([`Params::reverse`]) apply
     /// to every effect: it draws on the grouped, possibly reversed strip and
@@ -400,6 +457,12 @@ impl Effect {
             Effect::Heartbeat => complex::heartbeat(pixels, state, params),
             Effect::RainbowFireworks => complex::rainbow_fireworks(pixels, state, params),
             Effect::SparkleRandom => twinkle::sparkle_random(pixels, state, params),
+
+            Effect::Sine => wave::sine(pixels, state, params),
+            Effect::Bpm => wave::bpm(pixels, state, params),
+            Effect::Percent => wave::percent(pixels, state, params),
+            Effect::Wavesins => wave::wavesins(pixels, state, params),
+            Effect::SolidPattern => wave::solid_pattern(pixels, state, params),
         }
     }
 }

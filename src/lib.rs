@@ -13,7 +13,7 @@ use heapless::Vec;
 use smart_leds_trait::RGB8;
 
 use crate::effect::Effect;
-pub use crate::params::Params;
+pub use crate::params::{Params, Setting};
 /// The color8 release whose palettes [`Params::palette`] takes.
 pub use color8;
 pub use crate::pixel::Pixel;
@@ -113,7 +113,8 @@ impl<const N: usize> StripFx<N> {
                 let stop = self.segments[i].stop;
                 let effect = self.segments[i].effect;
                 let params =
-                    Params::from_segment(&self.segments[i].config, &self.segments[i].options);
+                    Params::from_segment(&self.segments[i].config, &self.segments[i].options)
+                        .now_ms(now_ms as u32);
                 let mut state = self.segments[i].state;
 
                 let end = (stop + 1).min(N);

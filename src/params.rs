@@ -34,6 +34,60 @@ pub struct Params {
     pub size: u8,
     /// Draw from the far end of the strip.
     pub reverse: bool,
+    /// The caller's clock when this step is drawn, in milliseconds, wrapping.
+    /// Time-driven effects (Sine, Bpm, Wavesins) animate by it;
+    /// [`StripFx`](crate::StripFx) fills it in.
+    pub now_ms: u32,
+    /// How fast a time-driven effect moves, `0`–`255`.
+    pub rate: u8,
+    /// How tightly a wave repeats along the strip, `0`–`255`.
+    pub scale: u8,
+    /// How much of the strip is lit, from none at `0` to all at `255`.
+    pub fill: u8,
+    /// Draw the lit part in the primary color alone, not the palette.
+    pub one_color: bool,
+    /// Length of each stripe, `0`–`255` for 1 to 16 pixels.
+    pub width: u8,
+    /// Length of each gap between stripes, `0`–`255` for 0 to 15 pixels.
+    pub gap: u8,
+    /// How deep brightness dips, `0`–`255`.
+    pub variation: u8,
+    /// Where on the palette an effect's colors start, `0`–`255`.
+    pub palette_start: u8,
+    /// How far along the palette an effect's colors reach, `0`–`255`.
+    pub palette_span: u8,
+    /// How far apart on the palette neighbouring pixels are, `0`–`255`.
+    pub palette_step: u8,
+}
+
+/// A setting an effect can read: for callers that map controls of their own
+/// onto effects. [`Effect::settings`](crate::effect::Effect::settings) lists
+/// the ones each effect reads, and [`Params::with`] sets one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Setting {
+    /// [`Params::intensity`].
+    Intensity,
+    /// [`Params::rate`].
+    Rate,
+    /// [`Params::scale`].
+    Scale,
+    /// [`Params::fill`].
+    Fill,
+    /// [`Params::one_color`]: on for any nonzero value.
+    OneColor,
+    /// [`Params::width`].
+    Width,
+    /// [`Params::gap`].
+    Gap,
+    /// [`Params::variation`].
+    Variation,
+    /// [`Params::palette_start`].
+    PaletteStart,
+    /// [`Params::palette_span`].
+    PaletteSpan,
+    /// [`Params::palette_step`].
+    PaletteStep,
 }
 
 impl Params {
@@ -41,7 +95,8 @@ impl Params {
     pub const DEFAULT_INTENSITY: u8 = 128;
 
     /// Default parameters with the given colors: 200 ms steps, default
-    /// intensity, no grouping, forward.
+    /// intensity, no grouping, forward, the clock at zero, and every other
+    /// setting at a middle value that draws its effect's classic look.
     pub const fn new(colors: [RGB8; 3]) -> Self {
         Self {
             colors,
@@ -50,6 +105,17 @@ impl Params {
             intensity: Self::DEFAULT_INTENSITY,
             size: 0,
             reverse: false,
+            now_ms: 0,
+            rate: 128,
+            scale: 128,
+            fill: 128,
+            one_color: false,
+            width: 48,
+            gap: 48,
+            variation: 128,
+            palette_start: 0,
+            palette_span: 255,
+            palette_step: 16,
         }
     }
 
@@ -74,6 +140,30 @@ impl Params {
     /// With pixel grouping `size`.
     pub const fn size(mut self, size: u8) -> Self {
         self.size = size;
+        self
+    }
+
+    /// Drawn at `now_ms` on the caller's clock.
+    pub const fn now_ms(mut self, now_ms: u32) -> Self {
+        self.now_ms = now_ms;
+        self
+    }
+
+    /// With `setting` at `value`; a switch is on for any nonzero value.
+    pub const fn with(mut self, setting: Setting, value: u8) -> Self {
+        match setting {
+            Setting::Intensity => self.intensity = value,
+            Setting::Rate => self.rate = value,
+            Setting::Scale => self.scale = value,
+            Setting::Fill => self.fill = value,
+            Setting::OneColor => self.one_color = value != 0,
+            Setting::Width => self.width = value,
+            Setting::Gap => self.gap = value,
+            Setting::Variation => self.variation = value,
+            Setting::PaletteStart => self.palette_start = value,
+            Setting::PaletteSpan => self.palette_span = value,
+            Setting::PaletteStep => self.palette_step = value,
+        }
         self
     }
 

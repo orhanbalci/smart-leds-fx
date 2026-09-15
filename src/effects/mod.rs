@@ -6,3 +6,4 @@ pub(crate) mod fire;
 pub(crate) mod rainbow;
 pub(crate) mod scanner;
 pub(crate) mod twinkle;
+pub(crate) mod wave;

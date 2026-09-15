@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Effects: Sine, Bpm, Percent, Wavesins and Solid Pattern. Sine, Bpm and
+  Wavesins are time-driven: they draw from the clock rather than a step count.
+- Named settings on `Params` for them: `rate`, `scale`, `fill`, `one_color`,
+  `width`, `gap`, `variation`, `palette_start`, `palette_span` and
+  `palette_step`, each with a default. `Params::now_ms` carries the clock, and
+  `StripFx` fills it in.
+- `Setting`, `Params::with` and `Effect::settings`: for callers that map
+  controls of their own onto the settings each effect reads.
+
 ## 0.3.0 — 2026-09-15
 
 ### Added
