@@ -1,6 +1,8 @@
 use smart_leds_trait::RGB8;
 
 use crate::effects;
+use crate::params::Params;
+use crate::pixel::Pixel;
 use crate::segment::{EffectConfig, EffectState};
 use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, color_wheel, next_rand};
 
@@ -227,135 +229,203 @@ impl Effect {
         Self::ALL.iter().copied()
     }
 
+    /// Renders one step of this effect into `pixels`.
+    ///
+    /// The same as [`step`](Self::step) with parameters converted from
+    /// `config`: default intensity, no grouping, forward.
     pub fn render(self, pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
+        self.step(pixels, state, &Params::from(config));
+    }
+
+    /// Renders one step of this effect into a buffer of any [`Pixel`] type.
+    ///
+    /// Each call advances the animation by one step, drawing over what the
+    /// buffer held after the previous step — many effects fade, shift or
+    /// restore those pixels — so pass the same buffer and `state` every time.
+    /// The caller decides when to step; [`StripFx`](crate::StripFx) steps a
+    /// segment every [`Params::speed`] milliseconds.
+    ///
+    /// Grouping ([`Params::size`]) and direction ([`Params::reverse`]) apply
+    /// to every effect: it draws on the grouped, possibly reversed strip and
+    /// the result is spread back over `pixels`.
+    pub fn step<P: Pixel>(self, pixels: &mut [P], state: &mut EffectState, params: &Params) {
+        // Effects index and divide by the length; an empty strip has nothing to draw.
+        if pixels.is_empty() {
+            return;
+        }
+        with_layout(pixels, params, |view| self.draw(view, state, params));
+    }
+
+    /// Draws one step on the strip as the effect sees it.
+    fn draw<P: Pixel>(self, pixels: &mut [P], state: &mut EffectState, params: &Params) {
         use effects::*;
 
         match self {
-            Effect::Static => color::static_color(pixels, state, config),
-            Effect::Blink => color::blink(pixels, state, config),
-            Effect::BlinkRainbow => color::blink_rainbow(pixels, state, config),
-            Effect::Strobe => color::blink(pixels, state, config),
-            Effect::StrobeRainbow => color::blink_rainbow(pixels, state, config),
-            Effect::Breath => color::breath(pixels, state, config),
-            Effect::Rainbow => color::rainbow(pixels, state, config),
-            Effect::Fade => color::fade(pixels, state, config),
-            Effect::HyperSparkle => color::hyper_sparkle(pixels, state, config),
-            Effect::MultiStrobe => color::multi_strobe(pixels, state, config),
+            Effect::Static => color::static_color(pixels, state, params),
+            Effect::Blink => color::blink(pixels, state, params),
+            Effect::BlinkRainbow => color::blink_rainbow(pixels, state, params),
+            Effect::Strobe => color::strobe(pixels, state, params),
+            Effect::StrobeRainbow => color::strobe_rainbow(pixels, state, params),
+            Effect::Breath => color::breath(pixels, state, params),
+            Effect::Rainbow => color::rainbow(pixels, state, params),
+            Effect::Fade => color::fade(pixels, state, params),
+            Effect::HyperSparkle => color::hyper_sparkle(pixels, state, params),
+            Effect::MultiStrobe => color::multi_strobe(pixels, state, params),
 
-            Effect::RainbowCycle => rainbow::rainbow_cycle(pixels, state, config),
+            Effect::RainbowCycle => rainbow::rainbow_cycle(pixels, state, params),
 
-            Effect::ColorWipe => chase::color_wipe(pixels, state, config),
+            Effect::ColorWipe => chase::color_wipe(pixels, state, params),
             Effect::ColorWipeInv => {
-                let mut cfg = *config;
-                cfg.colors.swap(0, 1);
-                chase::color_wipe(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors.swap(0, 1);
+                chase::color_wipe(pixels, state, &p);
             }
-            Effect::ColorWipeRandom => chase::color_wipe_random(pixels, state, config),
-            Effect::ColorSweepRandom => chase::color_sweep_random(pixels, state, config),
-            Effect::Scan => chase::scan(pixels, state, config),
-            Effect::DualScan => chase::dual_scan(pixels, state, config),
+            Effect::ColorWipeRandom => chase::color_wipe_random(pixels, state, params),
+            Effect::ColorSweepRandom => chase::color_sweep_random(pixels, state, params),
+            Effect::Scan => chase::scan(pixels, state, params),
+            Effect::DualScan => chase::dual_scan(pixels, state, params),
 
-            Effect::TricolorChase => chase::tricolor_chase(pixels, state, config),
+            Effect::TricolorChase => chase::tricolor_chase(pixels, state, params),
             Effect::CircusCombustus => {
-                let mut cfg = *config;
-                cfg.colors = [RED, WHITE, BLACK];
-                chase::tricolor_chase(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors = [RED, WHITE, BLACK];
+                chase::tricolor_chase(pixels, state, &p);
             }
             Effect::TheaterChase => {
-                let mut cfg = *config;
-                cfg.colors[2] = config.colors[1];
-                chase::tricolor_chase(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors[2] = params.colors[1];
+                chase::tricolor_chase(pixels, state, &p);
             }
-            Effect::TheaterChaseRainbow => chase::theater_chase_rainbow(pixels, state, config),
-            Effect::BicolorChase => chase::chase(pixels, state, config),
+            Effect::TheaterChaseRainbow => chase::theater_chase_rainbow(pixels, state, params),
+            Effect::BicolorChase => chase::chase(pixels, state, params),
             Effect::ChaseColor => {
-                let mut cfg = *config;
-                cfg.colors[1] = WHITE;
-                cfg.colors[2] = WHITE;
-                chase::chase(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors[1] = WHITE;
+                p.colors[2] = WHITE;
+                chase::chase(pixels, state, &p);
             }
             Effect::ChaseBlackout => {
-                let mut cfg = *config;
-                cfg.colors[1] = BLACK;
-                cfg.colors[2] = BLACK;
-                chase::chase(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors[1] = BLACK;
+                p.colors[2] = BLACK;
+                chase::chase(pixels, state, &p);
             }
             Effect::ChaseWhite => {
-                let mut cfg = *config;
-                cfg.colors[0] = WHITE;
-                cfg.colors[1] = config.colors[0];
-                cfg.colors[2] = config.colors[0];
-                chase::chase(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors[0] = WHITE;
+                p.colors[1] = params.colors[0];
+                p.colors[2] = params.colors[0];
+                chase::chase(pixels, state, &p);
             }
-            Effect::ChaseRandom => chase::chase_random(pixels, state, config),
-            Effect::ChaseRainbowWhite => chase::chase_rainbow_white(pixels, state, config),
-            Effect::ChaseRainbow => chase::chase_rainbow(pixels, state, config),
-            Effect::ChaseBlackoutRainbow => chase::chase_blackout_rainbow(pixels, state, config),
+            Effect::ChaseRandom => chase::chase_random(pixels, state, params),
+            Effect::ChaseRainbowWhite => chase::chase_rainbow_white(pixels, state, params),
+            Effect::ChaseRainbow => chase::chase_rainbow(pixels, state, params),
+            Effect::ChaseBlackoutRainbow => chase::chase_blackout_rainbow(pixels, state, params),
             Effect::ChaseFlash => {
-                let mut cfg = *config;
-                cfg.colors[1] = WHITE;
-                chase::chase_flash(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors[1] = WHITE;
+                chase::chase_flash(pixels, state, &p);
             }
-            Effect::ChaseFlashRandom => chase::chase_flash_random(pixels, state, config),
+            Effect::ChaseFlashRandom => chase::chase_flash_random(pixels, state, params),
 
-            Effect::RunningColor => chase::running(pixels, state, config),
+            Effect::RunningColor => chase::running(pixels, state, params),
             Effect::RunningRedBlue => {
-                let mut cfg = *config;
-                cfg.colors = [RED, BLUE, BLACK];
-                chase::running(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors = [RED, BLUE, BLACK];
+                chase::running(pixels, state, &p);
             }
             Effect::MerryChristmas => {
-                let mut cfg = *config;
-                cfg.colors = [RED, GREEN, BLACK];
-                chase::running(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors = [RED, GREEN, BLACK];
+                chase::running(pixels, state, &p);
             }
             Effect::Halloween => {
-                let mut cfg = *config;
-                cfg.colors = [PURPLE, ORANGE, BLACK];
-                chase::running(pixels, state, &cfg);
+                let mut p = *params;
+                p.colors = [PURPLE, ORANGE, BLACK];
+                chase::running(pixels, state, &p);
             }
-            Effect::RunningRandom => chase::running_random(pixels, state, config),
-            Effect::RunningRandom2 => chase::running_random2(pixels, state, config),
-            Effect::RunningLights => dynamic::running_lights(pixels, state, config),
+            Effect::RunningRandom => chase::running_random(pixels, state, params),
+            Effect::RunningRandom2 => chase::running_random2(pixels, state, params),
+            Effect::RunningLights => dynamic::running_lights(pixels, state, params),
 
-            Effect::RandomColor => dynamic::random_color(pixels, state, config),
-            Effect::SingleDynamic => dynamic::single_dynamic(pixels, state, config),
-            Effect::MultiDynamic => dynamic::multi_dynamic(pixels, state, config),
-            Effect::BlockDissolve => dynamic::block_dissolve(pixels, state, config),
+            Effect::RandomColor => dynamic::random_color(pixels, state, params),
+            Effect::SingleDynamic => dynamic::single_dynamic(pixels, state, params),
+            Effect::MultiDynamic => dynamic::multi_dynamic(pixels, state, params),
+            Effect::BlockDissolve => dynamic::block_dissolve(pixels, state, params),
 
-            Effect::Twinkle => twinkle::twinkle(pixels, state, config),
-            Effect::TwinkleRandom => twinkle::twinkle_random(pixels, state, config),
-            Effect::TwinkleFade => twinkle::twinkle_fade(pixels, state, config),
-            Effect::TwinkleFadeRandom => twinkle::twinkle_fade_random(pixels, state, config),
-            Effect::Sparkle => twinkle::sparkle(pixels, state, config),
-            Effect::FlashSparkle => twinkle::flash_sparkle(pixels, state, config),
+            Effect::Twinkle => twinkle::twinkle(pixels, state, params),
+            Effect::TwinkleRandom => twinkle::twinkle_random(pixels, state, params),
+            Effect::TwinkleFade => twinkle::twinkle_fade(pixels, state, params),
+            Effect::TwinkleFadeRandom => twinkle::twinkle_fade_random(pixels, state, params),
+            Effect::Sparkle => twinkle::sparkle(pixels, state, params),
+            Effect::FlashSparkle => twinkle::flash_sparkle(pixels, state, params),
 
-            Effect::LarsonScanner => scanner::larson_scanner(pixels, state, config),
-            Effect::Comet => scanner::comet(pixels, state, config),
-            Effect::DualLarson => scanner::dual_larson(pixels, state, config),
-            Effect::RainbowLarson => scanner::rainbow_larson(pixels, state, config),
-            Effect::MultiComet => scanner::multi_comet(pixels, state, config),
+            Effect::LarsonScanner => scanner::larson_scanner(pixels, state, params),
+            Effect::Comet => scanner::comet(pixels, state, params),
+            Effect::DualLarson => scanner::dual_larson(pixels, state, params),
+            Effect::RainbowLarson => scanner::rainbow_larson(pixels, state, params),
+            Effect::MultiComet => scanner::multi_comet(pixels, state, params),
 
-            Effect::Fireworks => fire::fireworks(pixels, state, config),
+            Effect::Fireworks => fire::fireworks(pixels, state, params),
             Effect::FireworksRandom => {
-                let mut cfg = *config;
+                let mut p = *params;
                 let rng = next_rand(state.aux);
                 state.aux = rng;
-                cfg.colors[0] = color_wheel(rng as u8);
-                fire::fireworks(pixels, state, &cfg);
+                p.colors[0] = color_wheel(rng as u8);
+                fire::fireworks(pixels, state, &p);
             }
-            Effect::FireFlicker => fire::fire_flicker(pixels, state, config),
-            Effect::FireFlickerSoft => fire::fire_flicker_soft(pixels, state, config),
-            Effect::FireFlickerIntense => fire::fire_flicker_intense(pixels, state, config),
+            Effect::FireFlicker => fire::fire_flicker(pixels, state, params),
+            Effect::FireFlickerSoft => fire::fire_flicker_soft(pixels, state, params),
+            Effect::FireFlickerIntense => fire::fire_flicker_intense(pixels, state, params),
 
-            Effect::TwinkleFox => complex::twinkle_fox(pixels, state, config),
-            Effect::Rain => complex::rain(pixels, state, config),
-            Effect::Icu => complex::icu(pixels, state, config),
-            Effect::FillerUp => complex::filler_up(pixels, state, config),
-            Effect::TriFade => complex::trifade(pixels, state, config),
-            Effect::Heartbeat => complex::heartbeat(pixels, state, config),
-            Effect::RainbowFireworks => complex::rainbow_fireworks(pixels, state, config),
-            Effect::SparkleRandom => twinkle::sparkle_random(pixels, state, config),
+            Effect::TwinkleFox => complex::twinkle_fox(pixels, state, params),
+            Effect::Rain => complex::rain(pixels, state, params),
+            Effect::Icu => complex::icu(pixels, state, params),
+            Effect::FillerUp => complex::filler_up(pixels, state, params),
+            Effect::TriFade => complex::trifade(pixels, state, params),
+            Effect::Heartbeat => complex::heartbeat(pixels, state, params),
+            Effect::RainbowFireworks => complex::rainbow_fireworks(pixels, state, params),
+            Effect::SparkleRandom => twinkle::sparkle_random(pixels, state, params),
+        }
+    }
+}
+
+/// Runs `draw` on the strip as the effect sees it: `params.group_len()` LEDs
+/// per drawn pixel and, if reversed, back to front.
+///
+/// Between steps `pixels` holds the displayed frame, so the effect's view is
+/// rebuilt from it first: effects that read back their previous frame find it
+/// exactly as they drew it.
+fn with_layout<P: Pixel>(pixels: &mut [P], params: &Params, draw: impl FnOnce(&mut [P])) {
+    let group = params.group_len();
+    let len = pixels.len();
+    let drawn = len.div_ceil(group);
+
+    // Collapse each group to its first LED. Reads stay ahead of writes.
+    if group > 1 {
+        for i in 1..drawn {
+            pixels[i] = pixels[i * group];
+        }
+    }
+
+    let view = &mut pixels[..drawn];
+    if params.reverse {
+        view.reverse();
+    }
+    draw(view);
+    if params.reverse {
+        view.reverse();
+    }
+
+    // Spread each drawn pixel over its group, from the far end back, so no
+    // drawn pixel is overwritten before it is spread.
+    if group > 1 {
+        for i in (0..drawn).rev() {
+            let color = pixels[i];
+            let start = i * group;
+            for pixel in &mut pixels[start..(start + group).min(len)] {
+                *pixel = color;
+            }
         }
     }
 }

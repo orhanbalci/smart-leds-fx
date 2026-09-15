@@ -17,8 +17,14 @@ exclude = ["examples/", ".gitignore"]
 [dependencies]
 smart-leds-trait = "0.3"
 heapless = "0.8"
-micromath = "2"
+lib8tion = "0.1"
 fastrand = { version = "2", default-features = false }
+color8 = { version = "0.1", optional = true }
+
+[features]
+# Implement `Pixel` for `color8::Crgb`, so effects render straight into
+# color8 buffers.
+color8 = ["dep:color8"]
 
 [dev-dependencies]
 smart-leds = "0.4"

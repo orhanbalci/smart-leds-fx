@@ -27,7 +27,7 @@ Your code calls `service(now_ms)` each loop iteration. When it returns `true`, a
 
 ## Features
 
-- **68 effects** ported from WS2812FX
+- **66 effects** ported from WS2812FX
 - `no_std` + `heapless` — no heap allocation, works on bare-metal
 - Const-generic strip size — `StripFx<60>` sizes the pixel buffer at compile time
 - Up to 10 independent segments, each with its own effect, speed, and colors
@@ -107,9 +107,45 @@ fx.set_segment(1, Segment::new(30, 59, Effect::RainbowCycle)
 
 ---
 
+## Rendering into your own buffer
+
+`StripFx` owns the pixels, the segments and the timing. To drive effects from
+your own engine instead, step an effect directly into a buffer you keep:
+
+```rust
+use smart_leds_fx::prelude::*;
+
+use smart_leds_fx::Params;
+
+let mut pixels = [BLACK; 30];
+let mut state = EffectState::default();
+let params = Params::new([RED, BLACK, BLACK])
+    .intensity(200) // shorter trail
+    .size(1)        // each drawn pixel lights 2 LEDs
+    .reverse(true);
+
+// Call once per step, at whatever rate you choose.
+Effect::LarsonScanner.step(&mut pixels, &mut state, &params);
+```
+
+Keep the same buffer and `state` between steps: many effects fade, shift or
+restore what the previous step drew. `intensity` shapes each effect's
+strength — trail length, fade rate, flicker depth — and the default of 128
+draws its classic look.
+
+The buffer can hold any type implementing `Pixel`. Enable the `color8` feature
+to render straight into [`color8`](https://crates.io/crates/color8) `Crgb`
+pixels:
+
+```toml
+smart-leds-fx = { version = "0.1", features = ["color8"] }
+```
+
+---
+
 ## Terminal simulator
 
-Not sure which effect you want? Run the built-in terminal simulator to preview all 68 effects live in your terminal — no hardware needed:
+Not sure which effect you want? Run the built-in terminal simulator to preview all 66 effects live in your terminal — no hardware needed:
 
 ```sh
 cargo run --example terminal_sim

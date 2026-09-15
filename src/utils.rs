@@ -1,5 +1,6 @@
-use micromath::F32Ext;
 use smart_leds_trait::RGB8;
+
+use crate::pixel::Pixel;
 
 /// Convenience constructor — shorter than writing `RGB8 { r, g, b }` inline.
 pub const fn rgb(r: u8, g: u8, b: u8) -> RGB8 {
@@ -53,10 +54,19 @@ pub(crate) fn color_wheel(pos: u8) -> RGB8 {
 }
 
 /// Maps 0–255 to a full sine cycle, output 0–255.
-/// Uses micromath for a smooth approximation suitable for no_std.
+/// Integer-only, so it stays cheap on cores without an FPU.
 pub(crate) fn sine8(pos: u8) -> u8 {
-    let angle = pos as f32 * core::f32::consts::TAU / 256.0;
-    (angle.sin() * 127.5 + 127.5) as u8
+    lib8tion::sin8(pos)
+}
+
+/// `base` scaled by `intensity`, where [`Params::DEFAULT_INTENSITY`] leaves it
+/// unchanged. Saturates at 255.
+///
+/// [`Params::DEFAULT_INTENSITY`]: crate::Params::DEFAULT_INTENSITY
+pub(crate) fn scaled(base: u8, intensity: u8) -> u8 {
+    let value =
+        u16::from(base) * u16::from(intensity) / u16::from(crate::Params::DEFAULT_INTENSITY);
+    value.min(255) as u8
 }
 
 /// Linearly interpolate between two colors.
@@ -71,10 +81,18 @@ pub(crate) fn color_blend(c1: RGB8, c2: RGB8, blend: u8) -> RGB8 {
     }
 }
 
-/// Blend every pixel toward `target` by `rate/255` each call.
-pub(crate) fn fade_out(pixels: &mut [RGB8], target: RGB8, rate: u8) {
+/// Set every pixel to `color`.
+pub(crate) fn fill<P: Pixel>(pixels: &mut [P], color: RGB8) {
+    let pixel = P::from_rgb8(color);
     for p in pixels.iter_mut() {
-        *p = color_blend(*p, target, rate);
+        *p = pixel;
+    }
+}
+
+/// Blend every pixel toward `target` by `rate/255` each call.
+pub(crate) fn fade_out<P: Pixel>(pixels: &mut [P], target: RGB8, rate: u8) {
+    for p in pixels.iter_mut() {
+        *p = P::from_rgb8(color_blend(p.to_rgb8(), target, rate));
     }
 }
 

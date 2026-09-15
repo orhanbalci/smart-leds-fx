@@ -67,6 +67,12 @@ impl Segment {
         self.stop.saturating_sub(self.start) + 1
     }
 
+    /// Always `false`: a segment's range is inclusive, so it covers at least
+    /// one LED.
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+
     pub fn speed(mut self, ms: u16) -> Self {
         self.config.speed = ms;
         self

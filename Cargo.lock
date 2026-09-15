@@ -21,6 +21,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "color8"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea3ab4a9ff5b0dd0b96efd6cab14fa53b93e5be16290ec4a00648fa5111038cc"
+dependencies = [
+ "lib8tion",
+]
+
+[[package]]
 name = "crossterm"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -81,6 +90,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lib8tion"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f21e4b357d0ace305f658e4e00dffd3e9195eb478f1e59adf98f37021ffbb1f"
+
+[[package]]
 name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -106,12 +121,6 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
-
-[[package]]
-name = "micromath"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3c8dda44ff03a2f238717214da50f65d5a53b45cd213a7370424ffdb6fae815"
 
 [[package]]
 name = "mio"
@@ -232,10 +241,11 @@ dependencies = [
 name = "smart-leds-fx"
 version = "0.1.0"
 dependencies = [
+ "color8",
  "crossterm",
  "fastrand",
  "heapless",
- "micromath",
+ "lib8tion",
  "smart-leds",
  "smart-leds-trait",
 ]

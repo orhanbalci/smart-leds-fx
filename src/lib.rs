@@ -2,6 +2,8 @@
 
 pub mod effect;
 pub(crate) mod effects;
+pub mod params;
+pub mod pixel;
 pub mod prelude;
 pub mod segment;
 pub mod utils;
@@ -10,6 +12,8 @@ use heapless::Vec;
 use smart_leds_trait::RGB8;
 
 use crate::effect::Effect;
+pub use crate::params::Params;
+pub use crate::pixel::Pixel;
 use crate::segment::{Segment, SegmentOptions};
 
 const MAX_SEGMENTS: usize = 10;
@@ -39,7 +43,9 @@ impl<const N: usize> StripFx<N> {
             running: true,
             triggered: false,
         };
-        let _ = fx.segments.push(Segment::new(0, N - 1, Effect::Static));
+        let _ = fx
+            .segments
+            .push(Segment::new(0, N.saturating_sub(1), Effect::Static));
         fx
     }
 
@@ -103,11 +109,12 @@ impl<const N: usize> StripFx<N> {
                 let start = self.segments[i].start;
                 let stop = self.segments[i].stop;
                 let effect = self.segments[i].effect;
-                let config = self.segments[i].config;
+                let params =
+                    Params::from_segment(&self.segments[i].config, &self.segments[i].options);
                 let mut state = self.segments[i].state;
 
                 let end = (stop + 1).min(N);
-                effect.render(&mut self.pixels[start..end], &mut state, &config);
+                effect.step(&mut self.pixels[start..end], &mut state, &params);
 
                 self.segments[i].state = state;
                 self.segments[i].last_update = now_ms;
@@ -154,7 +161,7 @@ impl<const N: usize> StripFx<N> {
 
     /// Add a new segment to the pool. Returns `Err` if the pool (max 10) is full.
     pub fn add_segment(&mut self, segment: Segment) -> Result<(), Segment> {
-        self.segments.push(segment).map_err(|s| s)
+        self.segments.push(segment)
     }
 
     /// Configure a segment by index using a fully built [`Segment`].
@@ -174,7 +181,9 @@ impl<const N: usize> StripFx<N> {
     /// Reset all segments to a single full-strip `Static` segment.
     pub fn reset_segments(&mut self) {
         self.segments.clear();
-        let _ = self.segments.push(Segment::new(0, N - 1, Effect::Static));
+        let _ = self
+            .segments
+            .push(Segment::new(0, N.saturating_sub(1), Effect::Static));
     }
 
     /// Reset the animation state of one segment (keeps its effect and colors).

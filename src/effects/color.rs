@@ -1,103 +1,123 @@
 use smart_leds_trait::RGB8;
 
-use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{WHITE, color_blend, color_wheel, next_rand};
+use crate::params::Params;
+use crate::pixel::Pixel;
+use crate::segment::EffectState;
+use crate::utils::{WHITE, color_blend, color_wheel, fill, next_rand};
 
-pub fn static_color(pixels: &mut [RGB8], _state: &mut EffectState, config: &EffectConfig) {
-    for pixel in pixels.iter_mut() {
-        *pixel = config.colors[0];
-    }
+pub fn static_color<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    fill(pixels, params.colors[0]);
 }
 
-pub fn blink(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
+pub fn blink<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let color = if state.counter % 2 == 0 {
-        config.colors[0]
+        params.colors[0]
     } else {
-        config.colors[1]
+        params.colors[1]
     };
-    for pixel in pixels.iter_mut() {
-        *pixel = color;
-    }
+    fill(pixels, color);
     state.counter = state.counter.wrapping_add(1);
 }
 
 /// Like blink but the "on" color cycles through the hue wheel each cycle.
-pub fn blink_rainbow(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
+pub fn blink_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let color = if state.counter % 2 == 0 {
         color_wheel((state.counter << 2) as u8)
     } else {
-        config.colors[1]
+        params.colors[1]
     };
-    for pixel in pixels.iter_mut() {
-        *pixel = color;
-    }
+    fill(pixels, color);
     state.counter = state.counter.wrapping_add(1);
 }
 
-pub fn breath(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
+pub fn breath<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let level = breath_level(state.counter as u8);
-    let c = config.colors[0];
+    let c = params.colors[0];
     let color = RGB8 {
         r: (c.r as u16 * level as u16 / 255) as u8,
         g: (c.g as u16 * level as u16 / 255) as u8,
         b: (c.b as u16 * level as u16 / 255) as u8,
     };
-    for pixel in pixels.iter_mut() {
-        *pixel = color;
-    }
+    fill(pixels, color);
     state.counter = state.counter.wrapping_add(1);
 }
 
 /// All LEDs cycle through a single solid hue.
-pub fn rainbow(pixels: &mut [RGB8], state: &mut EffectState, _config: &EffectConfig) {
-    let color = color_wheel(state.counter as u8);
-    for pixel in pixels.iter_mut() {
-        *pixel = color;
-    }
+pub fn rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+    fill(pixels, color_wheel(state.counter as u8));
     state.counter = state.counter.wrapping_add(1);
 }
 
 /// Smooth fade between `colors[1]` and `colors[0]`.
-pub fn fade(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
+pub fn fade<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let lum = state.counter as u16;
     let lum = if lum > 255 { 511 - lum } else { lum };
-    let color = color_blend(config.colors[1], config.colors[0], lum as u8);
-    for pixel in pixels.iter_mut() {
-        *pixel = color;
-    }
+    fill(
+        pixels,
+        color_blend(params.colors[1], params.colors[0], lum as u8),
+    );
     state.counter = (state.counter + 4) % 512;
 }
 
-/// Background `colors[0]` with 8 random white sparkles per frame.
-pub fn hyper_sparkle(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
-    for pixel in pixels.iter_mut() {
-        *pixel = config.colors[0];
+/// A single-step flash of `colors[0]` over `colors[1]`, then a pause that
+/// shortens as intensity rises.
+pub fn strobe<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let period = strobe_period(params.intensity);
+    let lit = state.counter % period == 0;
+    fill(
+        pixels,
+        if lit {
+            params.colors[0]
+        } else {
+            params.colors[1]
+        },
+    );
+    state.counter = (state.counter + 1) % period;
+}
+
+/// [`strobe`] whose flash advances around the hue wheel.
+/// `state.aux` holds the hue of the next flash.
+pub fn strobe_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let period = strobe_period(params.intensity);
+    if state.counter % period == 0 {
+        fill(pixels, color_wheel(state.aux as u8));
+        state.aux = (state.aux + 16) & 0xFF;
+    } else {
+        fill(pixels, params.colors[1]);
     }
+    state.counter = (state.counter + 1) % period;
+}
+
+/// Steps per flash cycle: 2 at full intensity, 9 at zero.
+fn strobe_period(intensity: u8) -> u32 {
+    2 + u32::from(255 - intensity) / 32
+}
+
+/// Background `colors[0]` with random white sparkles: 8 per frame at default
+/// intensity.
+pub fn hyper_sparkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    fill(pixels, params.colors[0]);
     let mut rng = state.aux;
-    for _ in 0..8 {
+    for _ in 0..(params.intensity / 16).max(1) {
         rng = next_rand(rng);
         let idx = (rng % pixels.len() as u32) as usize;
-        pixels[idx] = WHITE;
+        pixels[idx] = P::from_rgb8(WHITE);
     }
     state.aux = rng;
 }
 
-/// Strobe with N rapid flashes then a pause. N is derived from `config.speed`.
-pub fn multi_strobe(pixels: &mut [RGB8], state: &mut EffectState, config: &EffectConfig) {
-    let count = 2 * (config.speed as u32 / 100 + 1);
+/// Strobe with N rapid flashes then a pause. N is derived from `params.speed`.
+pub fn multi_strobe<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let count = 2 * (params.speed as u32 / 100 + 1);
     if state.counter < count {
         let color = if state.counter % 2 == 0 {
-            config.colors[0]
+            params.colors[0]
         } else {
-            config.colors[1]
+            params.colors[1]
         };
-        for pixel in pixels.iter_mut() {
-            *pixel = color;
-        }
+        fill(pixels, color);
     } else {
-        for pixel in pixels.iter_mut() {
-            *pixel = config.colors[1];
-        }
+        fill(pixels, params.colors[1]);
     }
     state.counter = (state.counter + 1) % (count + 1);
 }
