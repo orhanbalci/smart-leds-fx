@@ -1,22 +1,34 @@
 use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::EffectState;
-use crate::utils::{BLACK, WHITE, color_wheel, fill, next_rand, rand_wheel_index};
+use crate::utils::{BLACK, WHITE, fill, fill_primary, next_rand, rand_wheel_index};
 
 pub fn color_wipe<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let step = state.counter as usize % (len * 2);
     if step < len {
-        pixels[step] = P::from_rgb8(params.colors[0]);
+        pixels[step] = P::from_rgb8(params.primary_at(step, len));
     } else {
         pixels[step - len] = P::from_rgb8(params.colors[1]);
     }
     state.counter = state.counter.wrapping_add(1);
 }
 
+/// color_wipe that draws `colors[1]` first, then the primary color.
+pub fn color_wipe_inv<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let len = pixels.len();
+    let step = state.counter as usize % (len * 2);
+    if step < len {
+        pixels[step] = P::from_rgb8(params.colors[1]);
+    } else {
+        pixels[step - len] = P::from_rgb8(params.primary_at(step - len, len));
+    }
+    state.counter = state.counter.wrapping_add(1);
+}
+
 /// color_wipe that picks a new random wheel color each cycle.
 /// `state.aux` packs the wheel index (low byte) and rng seed (high 3 bytes).
-pub fn color_wipe_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn color_wipe_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let step = state.counter as usize % (len * 2);
 
@@ -27,7 +39,7 @@ pub fn color_wipe_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _p
         state.aux = new_idx as u32 | (new_rng << 8);
     }
 
-    let color = P::from_rgb8(color_wheel((state.aux & 0xFF) as u8));
+    let color = P::from_rgb8(params.wheel((state.aux & 0xFF) as u8));
     if step < len {
         pixels[step] = color;
     } else {
@@ -37,7 +49,7 @@ pub fn color_wipe_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _p
 }
 
 /// Alternating forward and reverse color wipes with a new random color each sweep.
-pub fn color_sweep_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn color_sweep_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let step = state.counter as usize % (len * 2);
     let forward = (state.counter / (len as u32 * 2)) % 2 == 0;
@@ -49,7 +61,7 @@ pub fn color_sweep_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _
         state.aux = new_idx as u32 | (new_rng << 8);
     }
 
-    let color = P::from_rgb8(color_wheel((state.aux & 0xFF) as u8));
+    let color = P::from_rgb8(params.wheel((state.aux & 0xFF) as u8));
     let pos = if forward {
         step.min(len - 1)
     } else {
@@ -80,7 +92,7 @@ pub fn scan<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params
 
     fill(pixels, params.colors[1]);
     if pos < len {
-        pixels[pos] = P::from_rgb8(params.colors[0]);
+        pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
     }
 
     if going_forward {
@@ -104,8 +116,9 @@ pub fn dual_scan<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
 
     fill(pixels, params.colors[1]);
     if pos < len {
-        pixels[pos] = P::from_rgb8(params.colors[0]);
-        pixels[len - 1 - pos] = P::from_rgb8(params.colors[0]);
+        pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
+        let mirror = len - 1 - pos;
+        pixels[mirror] = P::from_rgb8(params.primary_at(mirror, len));
     }
 
     if going_forward {
@@ -122,9 +135,13 @@ pub fn dual_scan<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
 }
 
 pub fn tricolor_chase<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let len = pixels.len();
     let offset = state.counter as usize;
     for (i, pixel) in pixels.iter_mut().enumerate() {
-        *pixel = P::from_rgb8(params.colors[(i + offset) % 3]);
+        *pixel = P::from_rgb8(match (i + offset) % 3 {
+            0 => params.primary_at(i, len),
+            slot => params.colors[slot],
+        });
     }
     state.counter = state.counter.wrapping_add(1);
 }
@@ -133,7 +150,7 @@ pub fn tricolor_chase<P: Pixel>(pixels: &mut [P], state: &mut EffectState, param
 /// `state.aux` = current wheel index.
 pub fn theater_chase_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     state.aux = state.aux.wrapping_add(1) & 0xFF;
-    let color = color_wheel(state.aux as u8);
+    let color = params.wheel(state.aux as u8);
     let offset = state.counter as usize % 3;
     for (i, pixel) in pixels.iter_mut().enumerate() {
         *pixel = P::from_rgb8(if (i + offset) % 3 == 0 {
@@ -153,7 +170,7 @@ pub fn chase<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Param
     for (i, pixel) in pixels.iter_mut().enumerate() {
         let pos = (i + offset) % len;
         *pixel = P::from_rgb8(if pos < dot {
-            params.colors[0]
+            params.primary_at(i, len)
         } else if pos < dot * 2 {
             params.colors[1]
         } else {
@@ -165,7 +182,7 @@ pub fn chase<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Param
 
 /// Chase with a random hue that changes each full cycle.
 /// Packs wheel_idx in low byte of `state.aux`, rng seed in high 3 bytes.
-pub fn chase_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn chase_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let dot = (len / 8).max(1);
     let offset = state.counter as usize % len;
@@ -177,7 +194,7 @@ pub fn chase_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params
         state.aux = new_idx as u32 | (new_rng << 8);
     }
 
-    let color = color_wheel((state.aux & 0xFF) as u8);
+    let color = params.wheel((state.aux & 0xFF) as u8);
     for (i, pixel) in pixels.iter_mut().enumerate() {
         let pos = (i + offset) % len;
         *pixel = P::from_rgb8(if pos < dot { color } else { WHITE });
@@ -186,7 +203,7 @@ pub fn chase_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params
 }
 
 /// White dot chasing a per-pixel rainbow background.
-pub fn chase_rainbow_white<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn chase_rainbow_white<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let dot = (len / 8).max(1);
     let offset = state.counter as usize % len;
@@ -197,7 +214,7 @@ pub fn chase_rainbow_white<P: Pixel>(pixels: &mut [P], state: &mut EffectState, 
         *pixel = P::from_rgb8(if pos < dot {
             WHITE
         } else {
-            color_wheel(((i * 256 / len) as u8).wrapping_add(call))
+            params.wheel(((i * 256 / len) as u8).wrapping_add(call))
         });
     }
     state.counter = state.counter.wrapping_add(1);
@@ -205,7 +222,7 @@ pub fn chase_rainbow_white<P: Pixel>(pixels: &mut [P], state: &mut EffectState, 
 }
 
 /// Rainbow-colored dot chasing on a white background.
-pub fn chase_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn chase_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let dot = (len / 8).max(1);
     let color_sep = (256 / len) as u8;
@@ -215,7 +232,7 @@ pub fn chase_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _param
     for (i, pixel) in pixels.iter_mut().enumerate() {
         let pos = (i + offset) % len;
         *pixel = P::from_rgb8(if pos < dot {
-            color_wheel((i as u8 * color_sep).wrapping_add(call))
+            params.wheel((i as u8 * color_sep).wrapping_add(call))
         } else {
             WHITE
         });
@@ -228,7 +245,7 @@ pub fn chase_rainbow<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _param
 pub fn chase_blackout_rainbow<P: Pixel>(
     pixels: &mut [P],
     state: &mut EffectState,
-    _params: &Params,
+    params: &Params,
 ) {
     let len = pixels.len();
     let dot = (len / 8).max(1);
@@ -239,7 +256,7 @@ pub fn chase_blackout_rainbow<P: Pixel>(
     for (i, pixel) in pixels.iter_mut().enumerate() {
         let pos = (i + offset) % len;
         *pixel = P::from_rgb8(if pos < dot {
-            color_wheel((i as u8 * color_sep).wrapping_add(call))
+            params.wheel((i as u8 * color_sep).wrapping_add(call))
         } else {
             BLACK
         });
@@ -255,7 +272,7 @@ pub fn chase_flash<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
     let pos = (state.counter / 4) as usize % len;
     let flash = state.counter % 4;
 
-    fill(pixels, params.colors[0]);
+    fill_primary(pixels, params);
     if flash == 0 || flash == 2 {
         pixels[pos] = P::from_rgb8(params.colors[1]);
     }
@@ -276,18 +293,19 @@ pub fn chase_flash_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, p
         state.aux = new_idx as u32 | (new_rng << 8);
     }
 
-    fill(pixels, params.colors[0]);
+    fill_primary(pixels, params);
     if flash == 0 || flash == 2 {
-        pixels[pos] = P::from_rgb8(color_wheel((state.aux & 0xFF) as u8));
+        pixels[pos] = P::from_rgb8(params.wheel((state.aux & 0xFF) as u8));
     }
     state.counter = state.counter.wrapping_add(1);
 }
 
-/// Alternating color bands that shift along the strip.
+/// Alternating color bands that shift along the strip. With a palette, each
+/// primary band takes the next stretch of the palette as it enters.
 pub fn running<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
     let color = if state.counter as usize & 2 != 0 {
-        params.colors[0]
+        params.primary((state.counter as u8).wrapping_mul(4))
     } else {
         params.colors[1]
     };
@@ -298,7 +316,7 @@ pub fn running<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Par
 
 /// Running with a random wheel color that changes every 4 pixels.
 /// Packs wheel_idx in low byte of `state.aux`, rng seed in upper 3 bytes.
-pub fn running_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn running_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len();
 
     if state.counter % 4 == 0 {
@@ -308,7 +326,7 @@ pub fn running_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _para
         state.aux = new_idx as u32 | (new_rng << 8);
     }
 
-    let color = color_wheel((state.aux & 0xFF) as u8);
+    let color = params.wheel((state.aux & 0xFF) as u8);
     pixels.copy_within(0..len - 1, 1);
     pixels[0] = P::from_rgb8(color);
     state.counter = state.counter.wrapping_add(1);

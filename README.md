@@ -41,7 +41,7 @@ Your code calls `service(now_ms)` each loop iteration. When it returns `true`, a
 
 ```toml
 [dependencies]
-smart-leds-fx = "0.2"
+smart-leds-fx = "0.3"
 ```
 
 ```rust
@@ -103,7 +103,13 @@ fx.set_segment(0, Segment::new(0, 29, Effect::FireFlicker)
 // Last 30 LEDs: slow rainbow
 fx.set_segment(1, Segment::new(30, 59, Effect::RainbowCycle)
     .speed(100));
+
+// Swap the rainbow for ocean colors while it runs
+fx.set_palette(1, Some(smart_leds_fx::color8::OCEAN_COLORS));
 ```
+
+A segment's [palette](#palettes) replaces its primary color; build one in with
+`Segment::palette`.
 
 ---
 
@@ -133,13 +139,29 @@ restore what the previous step drew. `intensity` shapes each effect's
 strength — trail length, fade rate, flicker depth — and the default of 128
 draws its classic look.
 
-The buffer can hold any type implementing `Pixel`. Enable the `color8` feature
-to render straight into [`color8`](https://crates.io/crates/color8) `Crgb`
-pixels:
+The buffer can hold any type implementing `Pixel`, including
+[`color8`](https://crates.io/crates/color8) `Crgb` pixels.
 
-```toml
-smart-leds-fx = { version = "0.2", features = ["color8"] }
+### Palettes
+
+Give `Params` a 16-entry [`color8`](https://crates.io/crates/color8) palette
+and it replaces the primary color:
+
+```rust
+use smart_leds_fx::color8::LAVA_COLORS;
+
+let params = Params::new([RED, BLACK, BLACK]).palette(LAVA_COLORS);
+Effect::Comet.step(&mut pixels, &mut state, &params);
 ```
+
+Effects that draw the primary color follow the palette along the strip — the
+comet above changes color as it travels. Effects that cycle the hue wheel
+(Rainbow, Rainbow Cycle, the random-color effects) cycle through the palette
+instead. Secondary and background colors stay as given, and effects with fixed
+colors of their own (Circus Combustus, Chase White, Running Red Blue, Merry
+Christmas, Halloween, Rainbow Fireworks) and Running Random 2, whose colors
+are random RGB, ignore the palette. Without a palette every effect draws
+exactly as before.
 
 ---
 
@@ -167,7 +189,7 @@ The simulator renders each LED as a colored `██` block using 24-bit ANSI col
 
 ```toml
 [dependencies]
-smart-leds-fx = "0.2"
+smart-leds-fx = "0.3"
 ws2812-esp32-rmt-driver = "0.5"
 esp-hal = { version = "0.18", features = ["esp32s3"] }
 ```

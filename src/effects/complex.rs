@@ -3,18 +3,19 @@ use smart_leds_trait::RGB8;
 use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::EffectState;
-use crate::utils::{BLACK, color_blend, color_wheel, fade_out, fill, next_rand, scaled, sine8};
+use crate::utils::{BLACK, color_blend, fade_out, fill, fill_with, next_rand, scaled, sine8};
 
 /// TwinkleFOX by Mark Kriegsman — deterministic per-LED sine-blended twinkle.
 /// Uses a fixed-seed LCG per LED so the pattern is stable without extra state.
 pub fn twinkle_fox<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    let len = pixels.len();
     let c0 = params.colors[0];
     let c1 = params.colors[1];
     let c2 = params.colors[2];
     let call = state.counter as u16;
 
     let mut seed: u16 = 0;
-    for pixel in pixels.iter_mut() {
+    for (i, pixel) in pixels.iter_mut().enumerate() {
         seed = seed.wrapping_mul(2053).wrapping_add(13849);
         let init = ((seed.wrapping_add(seed >> 8)) & 0xFF) as u8;
         seed = seed.wrapping_mul(2053).wrapping_add(13849);
@@ -25,11 +26,11 @@ pub fn twinkle_fox<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
 
         let is_black = |c: RGB8| c.r == 0 && c.g == 0 && c.b == 0;
         *pixel = P::from_rgb8(if is_black(c0) {
-            color_blend(color_wheel(init), c1, blend_amt)
+            color_blend(params.wheel(init), c1, blend_amt)
         } else if !is_black(c2) && init >= 128 {
             color_blend(c2, c1, blend_amt)
         } else {
-            color_blend(c0, c1, blend_amt)
+            color_blend(params.primary_at(i, len), c1, blend_amt)
         });
     }
     state.counter = state.counter.wrapping_add(1);
@@ -42,11 +43,7 @@ pub fn rain<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params
     let rng = next_rand(state.aux);
     state.aux = rng;
 
-    let rain_color = if rng & 1 == 0 {
-        params.colors[0]
-    } else {
-        params.colors[2]
-    };
+    let primary_drop = rng & 1 == 0;
 
     // Fade and add a random burst like fireworks.
     fade_out(pixels, BLACK, scaled(128, params.intensity));
@@ -54,7 +51,11 @@ pub fn rain<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params
         let rng2 = next_rand(rng);
         state.aux = rng2;
         let idx = (rng2 % (len as u32 - 2) + 1) as usize;
-        pixels[idx] = P::from_rgb8(rain_color);
+        pixels[idx] = P::from_rgb8(if primary_drop {
+            params.primary_at(idx, len)
+        } else {
+            params.colors[2]
+        });
     }
 
     // Shift everything 2 pixels (rain falls forward).
@@ -80,8 +81,8 @@ pub fn icu<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params)
     if settled {
         // Show eyes and pick a new target after a "pause" (8 steps).
         if pos < len && pos + half < len {
-            pixels[pos] = P::from_rgb8(params.colors[0]);
-            pixels[pos + half] = P::from_rgb8(params.colors[0]);
+            pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
+            pixels[pos + half] = P::from_rgb8(params.primary_at(pos + half, len));
         }
         let wait = state.aux >> 17;
         if wait >= 8 {
@@ -105,8 +106,8 @@ pub fn icu<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params)
     state.counter = new_pos as u32;
 
     if new_pos < len && new_pos + half < len {
-        pixels[new_pos] = P::from_rgb8(params.colors[0]);
-        pixels[new_pos + half] = P::from_rgb8(params.colors[0]);
+        pixels[new_pos] = P::from_rgb8(params.primary_at(new_pos, len));
+        pixels[new_pos + half] = P::from_rgb8(params.primary_at(new_pos + half, len));
     }
 
     if new_pos == dest {
@@ -122,27 +123,27 @@ pub fn filler_up<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
     let fill_level = (state.aux & 0xFFFF) as usize;
     let swapped = (state.aux >> 16) & 1 == 1;
 
-    let fg = if swapped {
-        params.colors[1]
+    // The liquid and the glass trade the primary and secondary colors each fill.
+    let primary = |i: usize| params.primary_at(i, len);
+    let secondary = |_: usize| params.colors[1];
+    let (fg, bg): (&dyn Fn(usize) -> RGB8, &dyn Fn(usize) -> RGB8) = if swapped {
+        (&secondary, &primary)
     } else {
-        params.colors[0]
-    };
-    let bg = if swapped {
-        params.colors[0]
-    } else {
-        params.colors[1]
+        (&primary, &secondary)
     };
 
     // Background
-    fill(pixels, bg);
+    fill_with(pixels, bg);
     // Accumulated fill at the bottom
     if fill_level > 0 && fill_level <= len {
-        fill(&mut pixels[len - fill_level..len], fg);
+        for (i, pixel) in pixels.iter_mut().enumerate().skip(len - fill_level) {
+            *pixel = P::from_rgb8(fg(i));
+        }
     }
     // Falling drop
     let dp = drop_pos.min(len.saturating_sub(fill_level + 1));
     if dp < len {
-        pixels[dp] = P::from_rgb8(fg);
+        pixels[dp] = P::from_rgb8(fg(dp));
     }
 
     // Advance drop
@@ -167,29 +168,32 @@ pub fn filler_up<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
 pub fn trifade<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let is_black = |c: RGB8| c.r == 0 && c.g == 0 && c.b == 0;
     let use_black = is_black(params.colors[2]);
+    let len = pixels.len();
 
-    let colors_main: [RGB8; 3] = params.colors;
-    let colors_alt: [RGB8; 6] = [
-        params.colors[0],
-        BLACK,
-        params.colors[1],
-        BLACK,
-        params.colors[2],
-        BLACK,
-    ];
+    // Stop `n` of the sequence at pixel `i`: the colors in turn, or with black
+    // stops each color followed by black.
+    let stop = |n: usize, i: usize| {
+        let slot = if use_black {
+            if n % 2 == 1 {
+                return BLACK;
+            }
+            n / 2
+        } else {
+            n
+        };
+        if slot == 0 {
+            params.primary_at(i, len)
+        } else {
+            params.colors[slot]
+        }
+    };
 
     let num = if use_black { 6usize } else { 3usize };
     let idx = (state.aux as usize) % num;
     let next_idx = (idx + 1) % num;
 
-    let (c1, c2) = if use_black {
-        (colors_alt[idx], colors_alt[next_idx])
-    } else {
-        (colors_main[idx], colors_main[next_idx])
-    };
-
     let blend = (state.counter & 0xFF) as u8;
-    fill(pixels, color_blend(c1, c2, blend));
+    fill_with(pixels, |i| color_blend(stop(idx, i), stop(next_idx, i), blend));
 
     state.counter = state.counter.wrapping_add(4);
     if state.counter & 0xFF < 4 {
@@ -215,7 +219,10 @@ pub fn heartbeat<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
     if step == 0 || step == 8 {
         // Beat: light up center pixels
         let size = 2.min(half);
-        fill(&mut pixels[half - size..half + size], params.colors[0]);
+        let beat = pixels.iter_mut().enumerate().take(half + size).skip(half - size);
+        for (i, pixel) in beat {
+            *pixel = P::from_rgb8(params.primary_at(i, len));
+        }
     }
 
     state.counter = (state.counter + 1) % 60;

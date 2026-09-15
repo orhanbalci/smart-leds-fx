@@ -2,7 +2,7 @@ use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::EffectState;
 use crate::utils::{
-    BLACK, WHITE, color_wheel, fade_out, fill, next_rand, rand_wheel_index, scaled,
+    BLACK, WHITE, fade_out, fill, fill_primary, next_rand, rand_wheel_index, scaled,
 };
 
 pub fn twinkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
@@ -18,7 +18,8 @@ pub fn twinkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Par
 
     let rng = next_rand(state.aux);
     state.aux = rng;
-    pixels[(rng % len) as usize] = P::from_rgb8(params.colors[0]);
+    let idx = (rng % len) as usize;
+    pixels[idx] = P::from_rgb8(params.primary_at(idx, len as usize));
     state.counter = state.counter.saturating_sub(1);
 }
 
@@ -41,7 +42,7 @@ pub fn twinkle_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, param
     }
 
     let wheel_idx = (state.counter >> 24) as u8;
-    let fg = color_wheel(wheel_idx);
+    let fg = params.wheel(wheel_idx);
     let rng = next_rand(state.aux);
     state.aux = rng;
     pixels[(rng % pixels.len() as u32) as usize] = P::from_rgb8(fg);
@@ -55,8 +56,9 @@ pub fn twinkle_fade<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params:
     let rng = next_rand(state.aux);
     state.aux = next_rand(rng);
     if rng % 3 == 0 {
-        let idx = (state.aux % pixels.len() as u32) as usize;
-        pixels[idx] = P::from_rgb8(params.colors[0]);
+        let len = pixels.len();
+        let idx = (state.aux % len as u32) as usize;
+        pixels[idx] = P::from_rgb8(params.primary_at(idx, len));
     }
 }
 
@@ -68,7 +70,7 @@ pub fn twinkle_fade_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, 
     state.aux = next_rand(rng);
     if rng % 3 == 0 {
         let idx = (state.aux % pixels.len() as u32) as usize;
-        pixels[idx] = P::from_rgb8(color_wheel(rng as u8));
+        pixels[idx] = P::from_rgb8(params.wheel(rng as u8));
     }
 }
 
@@ -76,9 +78,10 @@ pub fn sparkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Par
     let len = pixels.len() as u32;
 
     if state.aux == 0 {
-        fill(pixels, params.colors[0]);
+        fill_primary(pixels, params);
     } else {
-        pixels[state.counter as usize] = P::from_rgb8(params.colors[0]);
+        let prev = state.counter as usize;
+        pixels[prev] = P::from_rgb8(params.primary_at(prev, len as usize));
     }
 
     let rng = next_rand(state.aux);
@@ -93,9 +96,10 @@ pub fn flash_sparkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params
     let len = pixels.len() as u32;
 
     if state.aux == 0 {
-        fill(pixels, params.colors[0]);
+        fill_primary(pixels, params);
     } else {
-        pixels[state.counter as usize] = P::from_rgb8(params.colors[0]);
+        let prev = state.counter as usize;
+        pixels[prev] = P::from_rgb8(params.primary_at(prev, len as usize));
     }
 
     let rng = next_rand(state.aux);
@@ -106,7 +110,7 @@ pub fn flash_sparkle<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params
 }
 
 /// Random wheel color, advance color every full_len / 4 calls.
-pub fn sparkle_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _params: &Params) {
+pub fn sparkle_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
     let len = pixels.len() as u32;
 
     // aux: low byte = wheel_idx, next byte = sparkle_pos, high 2 bytes = rng
@@ -117,17 +121,17 @@ pub fn sparkle_random<P: Pixel>(pixels: &mut [P], state: &mut EffectState, _para
     if state.counter == 0 {
         let (new_idx, new_rng) = rand_wheel_index(wheel_idx, rng);
         // Rebuild background
-        fill(pixels, color_wheel(new_idx.wrapping_add(128)));
+        fill(pixels, params.wheel(new_idx.wrapping_add(128)));
         let rng2 = next_rand(new_rng);
         let new_pos = (rng2 % len) as usize;
-        pixels[new_pos] = P::from_rgb8(color_wheel(new_idx));
+        pixels[new_pos] = P::from_rgb8(params.wheel(new_idx));
         state.aux = new_idx as u32 | ((new_pos as u32) << 8) | (rng2 << 16);
     } else {
         // Restore previous sparkle
-        pixels[prev_pos] = P::from_rgb8(color_wheel(wheel_idx.wrapping_add(128)));
+        pixels[prev_pos] = P::from_rgb8(params.wheel(wheel_idx.wrapping_add(128)));
         let new_rng = next_rand(rng);
         let new_pos = (new_rng % len) as usize;
-        pixels[new_pos] = P::from_rgb8(color_wheel(wheel_idx));
+        pixels[new_pos] = P::from_rgb8(params.wheel(wheel_idx));
         state.aux = wheel_idx as u32 | ((new_pos as u32) << 8) | (new_rng << 16);
     }
     state.counter = state.counter.wrapping_add(1);

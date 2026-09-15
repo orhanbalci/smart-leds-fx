@@ -89,6 +89,20 @@ pub(crate) fn fill<P: Pixel>(pixels: &mut [P], color: RGB8) {
     }
 }
 
+/// Set each pixel to `color(index)`.
+pub(crate) fn fill_with<P: Pixel>(pixels: &mut [P], color: impl Fn(usize) -> RGB8) {
+    for (i, p) in pixels.iter_mut().enumerate() {
+        *p = P::from_rgb8(color(i));
+    }
+}
+
+/// Set every pixel to the primary color, following the palette along the
+/// strip when there is one.
+pub(crate) fn fill_primary<P: Pixel>(pixels: &mut [P], params: &crate::Params) {
+    let len = pixels.len();
+    fill_with(pixels, |i| params.primary_at(i, len));
+}
+
 /// Blend every pixel toward `target` by `rate/255` each call.
 pub(crate) fn fade_out<P: Pixel>(pixels: &mut [P], target: RGB8, rate: u8) {
     for p in pixels.iter_mut() {

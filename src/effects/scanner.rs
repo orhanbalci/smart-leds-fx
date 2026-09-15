@@ -3,7 +3,7 @@ use smart_leds_trait::RGB8;
 use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::EffectState;
-use crate::utils::{BLACK, color_wheel, fade_out, next_rand, scaled};
+use crate::utils::{BLACK, fade_out, next_rand, scaled};
 
 // Every scanner fades its trail by `64` at default intensity; higher
 // intensity gives shorter trails.
@@ -19,7 +19,7 @@ pub fn larson_scanner<P: Pixel>(pixels: &mut [P], state: &mut EffectState, param
 
     let pos = if step < len { step } else { total - step };
     if pos < len {
-        pixels[pos] = P::from_rgb8(params.colors[0]);
+        pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
     }
 
     state.counter = state.counter.wrapping_add(1);
@@ -35,12 +35,12 @@ pub fn dual_larson<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
     let going_forward = state.aux & 1 == 0;
 
     if pos < len {
-        pixels[pos] = P::from_rgb8(params.colors[0]);
+        pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
         let mirror_pos = len.saturating_sub(1).saturating_sub(pos);
         pixels[mirror_pos] = P::from_rgb8(if params.colors[2] != BLACK {
             params.colors[2]
         } else {
-            params.colors[0]
+            params.primary_at(mirror_pos, len)
         });
     }
 
@@ -68,7 +68,7 @@ pub fn rainbow_larson<P: Pixel>(pixels: &mut [P], state: &mut EffectState, param
     let call_count = ((state.aux >> 8) & 0xFF) as u8;
 
     if pos < len {
-        pixels[pos] = P::from_rgb8(color_wheel(call_count.wrapping_mul(16)));
+        pixels[pos] = P::from_rgb8(params.wheel(call_count.wrapping_mul(16)));
     }
 
     if going_forward {
@@ -90,7 +90,7 @@ pub fn comet<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Param
 
     let len = pixels.len();
     let pos = state.counter as usize % len;
-    pixels[pos] = P::from_rgb8(params.colors[0]);
+    pixels[pos] = P::from_rgb8(params.primary_at(pos, len));
 
     state.counter = state.counter.wrapping_add(1);
 }
@@ -101,6 +101,7 @@ pub fn multi_comet<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
     fade_out(pixels, BLACK, scaled(64, params.intensity));
 
     let len = pixels.len() as u32;
+    let last = pixels.len() - 1;
 
     // Comet 0: low 16 bits of counter; 0xFFFF = inactive.
     // Comet 1: high 16 bits of counter; 0xFFFF = inactive.
@@ -109,7 +110,8 @@ pub fn multi_comet<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
     let mut c1 = (state.counter >> 16) & 0xFFFF;
 
     if c0 != 0xFFFF {
-        pixels[(c0 as usize).min(pixels.len() - 1)] = P::from_rgb8(params.colors[0]);
+        let pos = (c0 as usize).min(last);
+        pixels[pos] = P::from_rgb8(params.primary_at(pos, pixels.len()));
         c0 += 1;
         if c0 >= len {
             c0 = 0xFFFF;
@@ -123,8 +125,9 @@ pub fn multi_comet<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: 
     }
 
     if c1 != 0xFFFF {
-        pixels[(c1 as usize).min(pixels.len() - 1)] =
-            P::from_rgb8(params.colors[2].try_or(params.colors[0]));
+        let pos = (c1 as usize).min(last);
+        pixels[pos] =
+            P::from_rgb8(params.colors[2].try_or(params.primary_at(pos, pixels.len())));
         c1 += 1;
         if c1 >= len {
             c1 = 0xFFFF;

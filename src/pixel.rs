@@ -30,7 +30,6 @@ impl Pixel for RGB8 {
     }
 }
 
-#[cfg(feature = "color8")]
 impl Pixel for color8::Crgb {
     #[inline]
     fn from_rgb8(color: RGB8) -> Self {

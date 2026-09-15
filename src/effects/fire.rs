@@ -18,7 +18,7 @@ pub fn fireworks<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &P
         if rng % 10 == 0 {
             rng = next_rand(rng);
             let idx = (rng % len) as usize;
-            pixels[idx] = P::from_rgb8(params.colors[0]);
+            pixels[idx] = P::from_rgb8(params.primary_at(idx, len as usize));
         }
     }
     state.aux = rng;
@@ -33,12 +33,13 @@ pub fn fire_flicker_intensity<P: Pixel>(
     params: &Params,
     rev_intensity: u8,
 ) {
-    let c = params.colors[0];
-    let max_lum = c.r.max(c.g).max(c.b);
-    let lum = scaled(max_lum / rev_intensity.max(1), params.intensity).max(1);
-
+    let len = pixels.len();
     let mut rng = state.aux;
-    for pixel in pixels.iter_mut() {
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        let c = params.primary_at(i, len);
+        let max_lum = c.r.max(c.g).max(c.b);
+        let lum = scaled(max_lum / rev_intensity.max(1), params.intensity).max(1);
+
         rng = next_rand(rng);
         let flicker = (rng % lum as u32) as u8;
         *pixel = P::from_rgb8(RGB8 {

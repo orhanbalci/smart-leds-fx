@@ -4,7 +4,7 @@ use crate::effects;
 use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::{EffectConfig, EffectState};
-use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, color_wheel, next_rand};
+use crate::utils::{BLACK, BLUE, GREEN, ORANGE, PURPLE, RED, WHITE, next_rand};
 
 /// A built-in effect.
 ///
@@ -253,6 +253,13 @@ impl Effect {
     /// Grouping ([`Params::size`]) and direction ([`Params::reverse`]) apply
     /// to every effect: it draws on the grouped, possibly reversed strip and
     /// the result is spread back over `pixels`.
+    ///
+    /// A [`Params::palette`] replaces the primary color: effects draw it along
+    /// the strip ([`Params::primary_at`]), and effects that cycle the hue
+    /// wheel cycle through it ([`Params::wheel`]). Effects with fixed colors
+    /// of their own — Circus Combustus, Chase White, Running Red Blue, Merry
+    /// Christmas, Halloween and Rainbow Fireworks — ignore it, as does Running
+    /// Random 2, whose colors are random RGB.
     pub fn step<P: Pixel>(self, pixels: &mut [P], state: &mut EffectState, params: &Params) {
         // Effects index and divide by the length; an empty strip has nothing to draw.
         if pixels.is_empty() {
@@ -280,11 +287,7 @@ impl Effect {
             Effect::RainbowCycle => rainbow::rainbow_cycle(pixels, state, params),
 
             Effect::ColorWipe => chase::color_wipe(pixels, state, params),
-            Effect::ColorWipeInv => {
-                let mut p = *params;
-                p.colors.swap(0, 1);
-                chase::color_wipe(pixels, state, &p);
-            }
+            Effect::ColorWipeInv => chase::color_wipe_inv(pixels, state, params),
             Effect::ColorWipeRandom => chase::color_wipe_random(pixels, state, params),
             Effect::ColorSweepRandom => chase::color_sweep_random(pixels, state, params),
             Effect::Scan => chase::scan(pixels, state, params),
@@ -294,6 +297,7 @@ impl Effect {
             Effect::CircusCombustus => {
                 let mut p = *params;
                 p.colors = [RED, WHITE, BLACK];
+                p.palette = None;
                 chase::tricolor_chase(pixels, state, &p);
             }
             Effect::TheaterChase => {
@@ -318,6 +322,7 @@ impl Effect {
             Effect::ChaseWhite => {
                 let mut p = *params;
                 p.colors[0] = WHITE;
+                p.palette = None;
                 p.colors[1] = params.colors[0];
                 p.colors[2] = params.colors[0];
                 chase::chase(pixels, state, &p);
@@ -337,16 +342,19 @@ impl Effect {
             Effect::RunningRedBlue => {
                 let mut p = *params;
                 p.colors = [RED, BLUE, BLACK];
+                p.palette = None;
                 chase::running(pixels, state, &p);
             }
             Effect::MerryChristmas => {
                 let mut p = *params;
                 p.colors = [RED, GREEN, BLACK];
+                p.palette = None;
                 chase::running(pixels, state, &p);
             }
             Effect::Halloween => {
                 let mut p = *params;
                 p.colors = [PURPLE, ORANGE, BLACK];
+                p.palette = None;
                 chase::running(pixels, state, &p);
             }
             Effect::RunningRandom => chase::running_random(pixels, state, params),
@@ -376,7 +384,8 @@ impl Effect {
                 let mut p = *params;
                 let rng = next_rand(state.aux);
                 state.aux = rng;
-                p.colors[0] = color_wheel(rng as u8);
+                p.colors[0] = params.wheel(rng as u8);
+                p.palette = None;
                 fire::fireworks(pixels, state, &p);
             }
             Effect::FireFlicker => fire::fire_flicker(pixels, state, params),

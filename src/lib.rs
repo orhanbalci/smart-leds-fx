@@ -8,11 +8,14 @@ pub mod prelude;
 pub mod segment;
 pub mod utils;
 
+use color8::CrgbPalette16;
 use heapless::Vec;
 use smart_leds_trait::RGB8;
 
 use crate::effect::Effect;
 pub use crate::params::Params;
+/// The color8 release whose palettes [`Params::palette`] takes.
+pub use color8;
 pub use crate::pixel::Pixel;
 use crate::segment::{Segment, SegmentOptions};
 
@@ -262,6 +265,20 @@ impl<const N: usize> StripFx<N> {
 
     pub fn get_colors(&self, idx: usize) -> Option<[RGB8; 3]> {
         self.segments.get(idx).map(|s| s.config.colors)
+    }
+
+    /// Set the palette of a segment, which replaces its primary color. `None`
+    /// goes back to drawing the primary color.
+    pub fn set_palette(&mut self, idx: usize, palette: Option<CrgbPalette16>) {
+        if let Some(seg) = self.segments.get_mut(idx) {
+            seg.config.palette = palette;
+        }
+    }
+
+    /// The palette of a segment: `None` if the segment does not exist or draws
+    /// its primary color.
+    pub fn get_palette(&self, idx: usize) -> Option<CrgbPalette16> {
+        self.segments.get(idx).and_then(|s| s.config.palette)
     }
 
     pub fn set_options(&mut self, idx: usize, options: SegmentOptions) {

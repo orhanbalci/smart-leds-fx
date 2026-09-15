@@ -1,3 +1,4 @@
+use color8::CrgbPalette16;
 use smart_leds_trait::RGB8;
 
 use crate::effect::Effect;
@@ -14,6 +15,10 @@ pub struct EffectConfig {
     pub colors: [RGB8; 3],
     /// Milliseconds between effect steps.
     pub speed: u16,
+    /// A palette that replaces the primary color; see [`Params::palette`].
+    ///
+    /// [`Params::palette`]: crate::Params::palette
+    pub palette: Option<CrgbPalette16>,
 }
 
 impl Default for EffectConfig {
@@ -25,6 +30,7 @@ impl Default for EffectConfig {
                 RGB8 { r: 0, g: 0, b: 0 },
             ],
             speed: 200,
+            palette: None,
         }
     }
 }
@@ -85,6 +91,12 @@ impl Segment {
 
     pub fn colors(mut self, colors: [RGB8; 3]) -> Self {
         self.config.colors = colors;
+        self
+    }
+
+    /// With `palette` in place of the primary color.
+    pub fn palette(mut self, palette: CrgbPalette16) -> Self {
+        self.config.palette = Some(palette);
         self
     }
 

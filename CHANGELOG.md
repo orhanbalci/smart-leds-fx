@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Palettes: `Params::palette` takes a 16-entry `color8::CrgbPalette16` that
+  replaces the primary color. Effects that draw the primary color follow the
+  palette along the strip; effects that cycle the hue wheel cycle through it.
+  Effects with fixed colors of their own, and Running Random 2, ignore it.
+  Without a palette every effect draws exactly as before.
+- Palettes in `StripFx`: `Segment::palette` when building a segment, and
+  `StripFx::set_palette` / `StripFx::get_palette` on a running strip.
+- `Params::primary`, `Params::primary_at` and `Params::wheel`: the colors
+  effects draw with, for callers writing their own effects.
+- `smart_leds_fx::color8` re-exports the color8 release palettes come from,
+  and the prelude exports `CrgbPalette16`.
+
+### Changed
+
+- **Breaking:** `EffectConfig` has a new `palette` field, so building one with
+  a struct literal needs `palette: None` (or `..Default::default()`).
+  Converting an `EffectConfig` into `Params` now carries its palette.
+- **Breaking:** the `color8` feature is gone. `color8` is a regular
+  dependency, and `Pixel` is always implemented for `color8::Crgb`; remove
+  `features = ["color8"]` from your manifest.
+
 ## 0.2.0 — 2026-09-15
 
 ### Added
