@@ -84,6 +84,18 @@ pub enum Effect {
     Percent,
     Wavesins,
     SolidPattern,
+    Saw,
+    Bands,
+    Stream,
+    Gradient,
+    Loading,
+    RunningDual,
+    TriWipe,
+    Lake,
+    Plasma,
+    Twinkleup,
+    Flow,
+    Railway,
 }
 
 impl Effect {
@@ -161,6 +173,18 @@ impl Effect {
             Effect::Percent => "Percent",
             Effect::Wavesins => "Wavesins",
             Effect::SolidPattern => "Solid Pattern",
+            Effect::Saw => "Saw",
+            Effect::Bands => "Bands",
+            Effect::Stream => "Stream",
+            Effect::Gradient => "Gradient",
+            Effect::Loading => "Loading",
+            Effect::RunningDual => "Running Dual",
+            Effect::TriWipe => "Tri Wipe",
+            Effect::Lake => "Lake",
+            Effect::Plasma => "Plasma",
+            Effect::Twinkleup => "Twinkle Up",
+            Effect::Flow => "Flow",
+            Effect::Railway => "Railway",
         }
     }
 
@@ -237,6 +261,18 @@ impl Effect {
         Effect::Percent,
         Effect::Wavesins,
         Effect::SolidPattern,
+        Effect::Saw,
+        Effect::Bands,
+        Effect::Stream,
+        Effect::Gradient,
+        Effect::Loading,
+        Effect::RunningDual,
+        Effect::TriWipe,
+        Effect::Lake,
+        Effect::Plasma,
+        Effect::Twinkleup,
+        Effect::Flow,
+        Effect::Railway,
     ];
 
     /// Total number of available effects.
@@ -285,6 +321,13 @@ impl Effect {
                 Setting::PaletteStep,
             ],
             Effect::SolidPattern => &[Setting::Width, Setting::Gap],
+            Effect::Saw | Effect::Bands | Effect::Stream => &[Setting::Rate, Setting::Width],
+            Effect::Gradient | Effect::Loading => &[Setting::Rate, Setting::Spread],
+            Effect::RunningDual | Effect::Plasma => &[Setting::Rate, Setting::Scale],
+            Effect::Lake => &[Setting::Rate],
+            Effect::Twinkleup => &[Setting::Rate, Setting::Intensity],
+            Effect::Flow => &[Setting::Rate, Setting::Count],
+            Effect::Railway => &[Setting::Rate, Setting::Smoothness],
             _ => &[],
         }
     }
@@ -303,9 +346,9 @@ impl Effect {
     /// buffer held after the previous step — many effects fade, shift or
     /// restore those pixels — so pass the same buffer and `state` every time.
     /// The caller decides when to step; [`StripFx`](crate::StripFx) steps a
-    /// segment every [`Params::speed`] milliseconds. Time-driven effects (Sine,
-    /// Bpm, Wavesins) draw from [`Params::now_ms`] instead of a step count, so
-    /// stepping them every frame makes them move smoothly.
+    /// segment every [`Params::speed`] milliseconds. Time-driven effects draw
+    /// from [`Params::now_ms`] instead of a step count, so stepping them every
+    /// frame makes them move smoothly.
     ///
     /// Grouping ([`Params::size`]) and direction ([`Params::reverse`]) apply
     /// to every effect: it draws on the grouped, possibly reversed strip and
@@ -463,6 +506,18 @@ impl Effect {
             Effect::Percent => wave::percent(pixels, state, params),
             Effect::Wavesins => wave::wavesins(pixels, state, params),
             Effect::SolidPattern => wave::solid_pattern(pixels, state, params),
+            Effect::Saw => motion::saw(pixels, state, params),
+            Effect::Bands => motion::bands(pixels, state, params),
+            Effect::Stream => motion::stream(pixels, state, params),
+            Effect::Gradient => motion::gradient(pixels, state, params),
+            Effect::Loading => motion::loading(pixels, state, params),
+            Effect::RunningDual => motion::running_dual(pixels, state, params),
+            Effect::TriWipe => motion::tri_wipe(pixels, state, params),
+            Effect::Lake => wave::lake(pixels, state, params),
+            Effect::Plasma => wave::plasma(pixels, state, params),
+            Effect::Twinkleup => wave::twinkleup(pixels, state, params),
+            Effect::Flow => motion::flow(pixels, state, params),
+            Effect::Railway => motion::railway(pixels, state, params),
         }
     }
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Effects: Saw, Bands, Stream, Gradient, Loading, Running Dual, Tri Wipe,
+  Lake, Plasma, Twinkle Up, Flow and Railway. All but Tri Wipe are
+  time-driven.
+- Settings `spread`, `count` and `smoothness`, with `Setting` variants.
+
 ## 0.3.1 — 2026-09-15
 
 ### Added

@@ -1,33 +1,16 @@
 //! Effects shaped by the clock and by named settings rather than by a step
 //! count.
 //!
-//! The time-driven ones — Sine, Bpm and Wavesins — draw each frame from
-//! [`Params::now_ms`], so they move smoothly however often they are stepped.
+//! The time-driven ones — all but Percent and Solid Pattern — draw each frame
+//! from [`Params::now_ms`], so they move smoothly however often they are
+//! stepped.
 
-use lib8tion::{beatsin8, sin8};
-use smart_leds_trait::RGB8;
+use lib8tion::{beatsin8, cos8, sin8};
 
 use crate::params::Params;
 use crate::pixel::Pixel;
 use crate::segment::EffectState;
-
-/// `color` at brightness `level`, where `255` leaves it unchanged.
-fn dim(color: RGB8, level: u8) -> RGB8 {
-    let channel = |c: u8| ((u16::from(c) * (u16::from(level) + 1)) >> 8) as u8;
-    RGB8 {
-        r: channel(color.r),
-        g: channel(color.g),
-        b: channel(color.b),
-    }
-}
-
-/// A phase that advances with the clock at `rate`: its low byte runs once
-/// around every two seconds at the default rate, every second at full rate,
-/// and all but stops at zero. Take bytes from it rather than dividing it, so
-/// the phase stays continuous when the clock wraps.
-fn phase(now_ms: u32, rate: u8) -> u32 {
-    now_ms.wrapping_mul(u32::from(rate) + 1) >> 10
-}
+use crate::utils::{color_blend, dim, hash32, phase};
 
 /// Bands of the hue wheel, or the palette, ripple along the strip under a sine
 /// wave of brightness. `rate` sets how fast they move; `scale` how tightly
@@ -101,6 +84,57 @@ pub fn wavesins<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &P
         let wave = sin8(ripple.wrapping_add((i as u32 * 3) as u8));
         let dip = (u16::from(255 - wave) * u16::from(params.variation) / 255) as u8;
         *pixel = P::from_rgb8(dim(color, 255 - dip));
+    }
+}
+
+/// Shimmering water: the palette, or the hue wheel, rippling in two waves that
+/// drift past each other, while brightness swells and fades.
+pub fn lake<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    let phase = phase(params.now_ms, params.rate);
+    let (near, far) = (phase as u8, (phase >> 1) as u8);
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        let ripple = sin8(((i as u32 * 3) as u8).wrapping_add(near)) / 2;
+        let swell = sin8(((i as u32 * 7) as u8).wrapping_sub(far)) / 2;
+        let level = 128 + sin8(((i as u32 * 5) as u8).wrapping_add(far)) / 2;
+        *pixel = P::from_rgb8(dim(params.wheel(ripple + swell), level));
+    }
+}
+
+/// Plasma: two sine layers at different scales adding up to slowly shifting
+/// blobs of color. `scale` sets how small the blobs are, and `rate` how fast
+/// they shift.
+pub fn plasma<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    let step = u32::from(params.scale / 32 + 1);
+    let phase = phase(params.now_ms, params.rate);
+    let (fast, slow) = (phase as u8, (phase >> 2) as u8);
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        let x = (i as u32 * step) as u8;
+        let sum = u16::from(sin8(x.wrapping_add(fast)))
+            + u16::from(cos8(x.wrapping_mul(2).wrapping_sub(slow)));
+        let index = (sum / 2) as u8;
+        let level = 64 + (u16::from(sin8(index.wrapping_add(slow))) * 191 / 255) as u8;
+        *pixel = P::from_rgb8(dim(params.wheel(index), level));
+    }
+}
+
+/// Pixels twinkling up in the primary color and fading back to `colors[1]`,
+/// each on a rhythm of its own. `intensity` sets how many pixels twinkle.
+pub fn twinkleup<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    let len = pixels.len();
+    let phase = phase(params.now_ms, params.rate);
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        let seed = hash32(i as u32);
+        let level = if (seed >> 8) as u8 <= params.intensity {
+            let tempo = 1 + (seed >> 16) % 4;
+            sin8((phase.wrapping_mul(tempo) as u8).wrapping_add(seed as u8))
+        } else {
+            0
+        };
+        *pixel = P::from_rgb8(color_blend(
+            params.colors[1],
+            params.primary_at(i, len),
+            level,
+        ));
     }
 }
 

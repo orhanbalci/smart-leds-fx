@@ -35,7 +35,7 @@ pub struct Params {
     /// Draw from the far end of the strip.
     pub reverse: bool,
     /// The caller's clock when this step is drawn, in milliseconds, wrapping.
-    /// Time-driven effects (Sine, Bpm, Wavesins) animate by it;
+    /// Time-driven effects animate by it;
     /// [`StripFx`](crate::StripFx) fills it in.
     pub now_ms: u32,
     /// How fast a time-driven effect moves, `0`–`255`.
@@ -58,6 +58,14 @@ pub struct Params {
     pub palette_span: u8,
     /// How far apart on the palette neighbouring pixels are, `0`–`255`.
     pub palette_step: u8,
+    /// How far a soft spot or tail reaches, `0`–`255` for a pixel to the whole
+    /// strip.
+    pub spread: u8,
+    /// How many zones an effect divides the strip into, `0`–`255`.
+    pub count: u8,
+    /// How gradually colors cross over, `0` for a sharp swap to `255` for a
+    /// slow fade.
+    pub smoothness: u8,
 }
 
 /// A setting an effect can read: for callers that map controls of their own
@@ -88,6 +96,12 @@ pub enum Setting {
     PaletteSpan,
     /// [`Params::palette_step`].
     PaletteStep,
+    /// [`Params::spread`].
+    Spread,
+    /// [`Params::count`].
+    Count,
+    /// [`Params::smoothness`].
+    Smoothness,
 }
 
 impl Params {
@@ -116,6 +130,9 @@ impl Params {
             palette_start: 0,
             palette_span: 255,
             palette_step: 16,
+            spread: 64,
+            count: 64,
+            smoothness: 128,
         }
     }
 
@@ -163,6 +180,9 @@ impl Params {
             Setting::PaletteStart => self.palette_start = value,
             Setting::PaletteSpan => self.palette_span = value,
             Setting::PaletteStep => self.palette_step = value,
+            Setting::Spread => self.spread = value,
+            Setting::Count => self.count = value,
+            Setting::Smoothness => self.smoothness = value,
         }
         self
     }

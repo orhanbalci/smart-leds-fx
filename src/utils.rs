@@ -81,6 +81,47 @@ pub(crate) fn color_blend(c1: RGB8, c2: RGB8, blend: u8) -> RGB8 {
     }
 }
 
+/// `color` at brightness `level`, where `255` leaves it unchanged.
+pub(crate) fn dim(color: RGB8, level: u8) -> RGB8 {
+    let channel = |c: u8| ((u16::from(c) * (u16::from(level) + 1)) >> 8) as u8;
+    RGB8 {
+        r: channel(color.r),
+        g: channel(color.g),
+        b: channel(color.b),
+    }
+}
+
+/// A phase that advances with the clock at `rate`: its low byte runs once
+/// around every two seconds at the default rate, every second at full rate,
+/// and all but stops at zero. Take bytes from it rather than dividing it, so
+/// the phase stays continuous when the clock wraps.
+pub(crate) fn phase(now_ms: u32, rate: u8) -> u32 {
+    now_ms.wrapping_mul(u32::from(rate) + 1) >> 10
+}
+
+/// How many pixels a pattern moving at `rate` has travelled by `now_ms`: about
+/// 8 a second at the default rate and 16 at full rate. Computed in 64 bits, so
+/// it only restarts when the clock itself wraps.
+pub(crate) fn travel(now_ms: u32, rate: u8) -> u64 {
+    (u64::from(now_ms) * (u64::from(rate) + 1)) >> 14
+}
+
+/// Where pixel `index` falls within a repeating pattern of `period` pixels once
+/// the pattern has moved `travel` pixels forward.
+pub(crate) fn pattern_position(index: usize, travel: u64, period: usize) -> usize {
+    let period = period.max(1) as u64;
+    ((index as u64 + period - travel % period) % period) as usize
+}
+
+/// A well-mixed hash of `x`: for a color or rhythm that must stay the same for
+/// a given pixel or zone.
+pub(crate) fn hash32(x: u32) -> u32 {
+    let mut z = x.wrapping_add(0x9E37_79B9);
+    z = (z ^ (z >> 16)).wrapping_mul(0x21F0_AAAD);
+    z = (z ^ (z >> 15)).wrapping_mul(0x735A_2D97);
+    z ^ (z >> 15)
+}
+
 /// Set every pixel to `color`.
 pub(crate) fn fill<P: Pixel>(pixels: &mut [P], color: RGB8) {
     let pixel = P::from_rgb8(color);
