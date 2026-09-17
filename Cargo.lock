@@ -239,7 +239,7 @@ dependencies = [
 
 [[package]]
 name = "smart-leds-fx"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "color8",
  "crossterm",
