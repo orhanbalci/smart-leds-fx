@@ -66,6 +66,10 @@ pub struct Params {
     /// How gradually colors cross over, `0` for a sharp swap to `255` for a
     /// slow fade.
     pub smoothness: u8,
+    /// Draw only the effect's highlights, leaving the rest black, for a caller
+    /// that blends the result onto something else. Effects with nothing to
+    /// leave out ignore it.
+    pub overlay: bool,
 }
 
 /// A setting an effect can read: for callers that map controls of their own
@@ -102,6 +106,8 @@ pub enum Setting {
     Count,
     /// [`Params::smoothness`].
     Smoothness,
+    /// [`Params::overlay`]: on for any nonzero value.
+    Overlay,
 }
 
 impl Params {
@@ -133,6 +139,7 @@ impl Params {
             spread: 64,
             count: 64,
             smoothness: 128,
+            overlay: false,
         }
     }
 
@@ -183,6 +190,7 @@ impl Params {
             Setting::Spread => self.spread = value,
             Setting::Count => self.count = value,
             Setting::Smoothness => self.smoothness = value,
+            Setting::Overlay => self.overlay = value != 0,
         }
         self
     }

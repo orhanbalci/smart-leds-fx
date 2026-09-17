@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Effects: Two Dots, Lightning, Spots, Spots Fade and Glitter.
+- `Params::overlay` and `Setting::Overlay`: those five draw only their
+  highlights and leave the rest black, for a caller that blends the result
+  onto something else.
+
 ## 0.3.2 — 2026-09-15
 
 ### Added

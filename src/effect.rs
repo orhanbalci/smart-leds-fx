@@ -96,6 +96,11 @@ pub enum Effect {
     Twinkleup,
     Flow,
     Railway,
+    TwoDots,
+    Lightning,
+    Spots,
+    SpotsFade,
+    Glitter,
 }
 
 impl Effect {
@@ -185,6 +190,11 @@ impl Effect {
             Effect::Twinkleup => "Twinkle Up",
             Effect::Flow => "Flow",
             Effect::Railway => "Railway",
+            Effect::TwoDots => "Two Dots",
+            Effect::Lightning => "Lightning",
+            Effect::Spots => "Spots",
+            Effect::SpotsFade => "Spots Fade",
+            Effect::Glitter => "Glitter",
         }
     }
 
@@ -273,6 +283,11 @@ impl Effect {
         Effect::Twinkleup,
         Effect::Flow,
         Effect::Railway,
+        Effect::TwoDots,
+        Effect::Lightning,
+        Effect::Spots,
+        Effect::SpotsFade,
+        Effect::Glitter,
     ];
 
     /// Total number of available effects.
@@ -328,6 +343,13 @@ impl Effect {
             Effect::Twinkleup => &[Setting::Rate, Setting::Intensity],
             Effect::Flow => &[Setting::Rate, Setting::Count],
             Effect::Railway => &[Setting::Rate, Setting::Smoothness],
+            Effect::TwoDots => &[Setting::Rate, Setting::Width, Setting::Overlay],
+            Effect::Lightning | Effect::Glitter => {
+                &[Setting::Rate, Setting::Intensity, Setting::Overlay]
+            }
+            Effect::Spots | Effect::SpotsFade => {
+                &[Setting::Spread, Setting::Width, Setting::Overlay]
+            }
             _ => &[],
         }
     }
@@ -518,6 +540,11 @@ impl Effect {
             Effect::Twinkleup => wave::twinkleup(pixels, state, params),
             Effect::Flow => motion::flow(pixels, state, params),
             Effect::Railway => motion::railway(pixels, state, params),
+            Effect::TwoDots => spots::two_dots(pixels, state, params),
+            Effect::Lightning => spots::lightning(pixels, state, params),
+            Effect::Spots => spots::spots(pixels, state, params),
+            Effect::SpotsFade => spots::spots_fade(pixels, state, params),
+            Effect::Glitter => spots::glitter(pixels, state, params),
         }
     }
 }

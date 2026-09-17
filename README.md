@@ -27,7 +27,7 @@ Your code calls `service(now_ms)` each loop iteration. When it returns `true`, a
 
 ## Features
 
-- **83 effects**: 66 ported from WS2812FX, plus time-driven waves, patterns and motion
+- **88 effects**: 66 ported from WS2812FX, plus time-driven waves, patterns, motion and highlights
 - `no_std` + `heapless` — no heap allocation, works on bare-metal
 - Const-generic strip size — `StripFx<60>` sizes the pixel buffer at compile time
 - Up to 10 independent segments, each with its own effect, speed, and colors
@@ -77,6 +77,7 @@ loop {
 | Complex | TwinkleFOX, Rain, ICU, Filler Up, Tri Fade, Heartbeat, Rainbow Fireworks |
 | Wave / Pattern | Sine, Bpm, Wavesins, Lake, Plasma, Twinkle Up (time-driven), Percent, Solid Pattern |
 | Motion | Saw, Bands, Stream, Gradient, Loading, Running Dual, Flow, Railway (time-driven), Tri Wipe |
+| Highlights | Two Dots, Lightning, Spots, Spots Fade, Glitter — each draws over a background, or only its highlights with `overlay` |
 
 Iterate all effects at runtime:
 
@@ -169,7 +170,7 @@ exactly as before.
 
 ## Terminal simulator
 
-Not sure which effect you want? Run the built-in terminal simulator to preview all 83 effects live in your terminal — no hardware needed:
+Not sure which effect you want? Run the built-in terminal simulator to preview all 88 effects live in your terminal — no hardware needed:
 
 ```sh
 cargo run --example terminal_sim
