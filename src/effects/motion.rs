@@ -55,6 +55,22 @@ pub fn stream<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Par
     }
 }
 
+/// Zones of four pixels flowing along the strip, each a random red, green and
+/// blue of its own rather than a color from the palette.
+pub fn stream2<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    const ZONE: u64 = 4;
+    let moved = travel(params.now_ms, params.rate);
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        // Counted from far ahead, so the zone index never goes below zero.
+        let zone = hash32(((i as u64 + (1 << 32) - moved) / ZONE) as u32);
+        *pixel = P::from_rgb8(smart_leds_trait::RGB8 {
+            r: (zone >> 16) as u8,
+            g: (zone >> 8) as u8,
+            b: zone as u8,
+        });
+    }
+}
+
 /// A soft spot of the primary color gliding back and forth over `colors[1]`.
 /// `spread` sets how far its glow reaches, from a pixel to the whole strip.
 pub fn gradient<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {

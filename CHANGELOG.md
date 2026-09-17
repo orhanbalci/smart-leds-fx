@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Effects: Stream 2, Solid Pattern Tri and Solid Glitter, each drawing with
+  colors of its own rather than the palette.
+- `Effect::uses_palette`: whether an effect draws with `Params::palette`, for
+  callers that offer a palette only where it does something.
+
 ## 0.3.3 — 2026-09-17
 
 ### Added

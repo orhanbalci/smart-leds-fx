@@ -94,6 +94,14 @@ fn lit_spots<P: Pixel>(pixels: &mut [P], params: &Params, level: u8) {
     }
 }
 
+/// Sparkles of `colors[2]` — white while that is black — over `colors[0]`, a
+/// new set with every step. `intensity` sets how many.
+pub fn solid_glitter<P: Pixel>(pixels: &mut [P], state: &mut EffectState, params: &Params) {
+    fill_with(pixels, |_| params.colors[0]);
+    scatter(pixels, params, state.counter);
+    state.counter = state.counter.wrapping_add(1);
+}
+
 /// Sparkles of `colors[2]` — white while that is black — scattered over the
 /// palette. `intensity` sets how many and `rate` how fast they move.
 pub fn glitter<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
@@ -107,14 +115,20 @@ pub fn glitter<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Pa
         }
     });
 
+    // A new set of sparkles every tick of the clock.
+    scatter(pixels, params, phase(params.now_ms, params.rate) >> 4);
+}
+
+/// Scatters `intensity`-many sparkles of `colors[2]` — white while that is
+/// black — over `pixels`, in the places `tick` picks.
+fn scatter<P: Pixel>(pixels: &mut [P], params: &Params, tick: u32) {
+    let len = pixels.len();
     let is_black = |c: RGB8| c.r == 0 && c.g == 0 && c.b == 0;
     let color = if is_black(params.colors[2]) {
         WHITE
     } else {
         params.colors[2]
     };
-    // A new set of sparkles every tick of the clock.
-    let tick = phase(params.now_ms, params.rate) >> 4;
     let count = 1 + len * usize::from(params.intensity) / 512;
     for sparkle in 0..count {
         let at = hash32(tick ^ (sparkle as u32).rotate_left(16)) as usize % len;

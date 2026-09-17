@@ -101,6 +101,9 @@ pub enum Effect {
     Spots,
     SpotsFade,
     Glitter,
+    Stream2,
+    SolidPatternTri,
+    SolidGlitter,
 }
 
 impl Effect {
@@ -195,6 +198,9 @@ impl Effect {
             Effect::Spots => "Spots",
             Effect::SpotsFade => "Spots Fade",
             Effect::Glitter => "Glitter",
+            Effect::Stream2 => "Stream 2",
+            Effect::SolidPatternTri => "Solid Pattern Tri",
+            Effect::SolidGlitter => "Solid Glitter",
         }
     }
 
@@ -288,6 +294,9 @@ impl Effect {
         Effect::Spots,
         Effect::SpotsFade,
         Effect::Glitter,
+        Effect::Stream2,
+        Effect::SolidPatternTri,
+        Effect::SolidGlitter,
     ];
 
     /// Total number of available effects.
@@ -298,6 +307,27 @@ impl Effect {
     /// Iterator over every effect variant.
     pub fn iter() -> impl Iterator<Item = Effect> {
         Self::ALL.iter().copied()
+    }
+
+    /// Whether this effect draws with [`Params::palette`] when one is set.
+    ///
+    /// Effects with colors of their own, and those whose colors are random
+    /// rather than chosen, ignore it — so a caller that offers a palette can
+    /// leave the choice out for them.
+    pub const fn uses_palette(self) -> bool {
+        !matches!(
+            self,
+            Effect::CircusCombustus
+                | Effect::ChaseWhite
+                | Effect::RunningRedBlue
+                | Effect::MerryChristmas
+                | Effect::Halloween
+                | Effect::RunningRandom2
+                | Effect::RainbowFireworks
+                | Effect::Stream2
+                | Effect::SolidPatternTri
+                | Effect::SolidGlitter
+        )
     }
 
     /// The settings this effect reads, beyond its colors, palette, grouping,
@@ -350,6 +380,9 @@ impl Effect {
             Effect::Spots | Effect::SpotsFade => {
                 &[Setting::Spread, Setting::Width, Setting::Overlay]
             }
+            Effect::Stream2 => &[Setting::Rate],
+            Effect::SolidPatternTri => &[Setting::Width],
+            Effect::SolidGlitter => &[Setting::Intensity],
             _ => &[],
         }
     }
@@ -545,6 +578,9 @@ impl Effect {
             Effect::Spots => spots::spots(pixels, state, params),
             Effect::SpotsFade => spots::spots_fade(pixels, state, params),
             Effect::Glitter => spots::glitter(pixels, state, params),
+            Effect::Stream2 => motion::stream2(pixels, state, params),
+            Effect::SolidPatternTri => wave::solid_pattern_tri(pixels, state, params),
+            Effect::SolidGlitter => spots::solid_glitter(pixels, state, params),
         }
     }
 }

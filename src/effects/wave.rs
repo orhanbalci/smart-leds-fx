@@ -138,6 +138,15 @@ pub fn twinkleup<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &
     }
 }
 
+/// Stripes of the three colors in turn, standing still. `width` sets each
+/// stripe, from 1 to 16 pixels. The colors are its own: no palette.
+pub fn solid_pattern_tri<P: Pixel>(pixels: &mut [P], _state: &mut EffectState, params: &Params) {
+    let width = 1 + usize::from(params.width >> 4);
+    for (i, pixel) in pixels.iter_mut().enumerate() {
+        *pixel = P::from_rgb8(params.colors[(i / width) % 3]);
+    }
+}
+
 /// Stripes that stand still: `width` sets each stripe of the primary color
 /// (following the palette), from 1 to 16 pixels, and `gap` the `colors[1]`
 /// between them, from 0 to 15.

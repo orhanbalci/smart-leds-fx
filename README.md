@@ -27,7 +27,7 @@ Your code calls `service(now_ms)` each loop iteration. When it returns `true`, a
 
 ## Features
 
-- **88 effects**: 66 ported from WS2812FX, plus time-driven waves, patterns, motion and highlights
+- **91 effects**: 66 ported from WS2812FX, plus time-driven waves, patterns, motion and highlights
 - `no_std` + `heapless` — no heap allocation, works on bare-metal
 - Const-generic strip size — `StripFx<60>` sizes the pixel buffer at compile time
 - Up to 10 independent segments, each with its own effect, speed, and colors
@@ -75,9 +75,9 @@ loop {
 | Scanner | Larson Scanner, Comet, Dual Larson, Rainbow Larson, Multi Comet |
 | Fire | Fireworks, Fireworks Random, Fire Flicker, Fire Flicker (Soft), Fire Flicker (Intense) |
 | Complex | TwinkleFOX, Rain, ICU, Filler Up, Tri Fade, Heartbeat, Rainbow Fireworks |
-| Wave / Pattern | Sine, Bpm, Wavesins, Lake, Plasma, Twinkle Up (time-driven), Percent, Solid Pattern |
-| Motion | Saw, Bands, Stream, Gradient, Loading, Running Dual, Flow, Railway (time-driven), Tri Wipe |
-| Highlights | Two Dots, Lightning, Spots, Spots Fade, Glitter — each draws over a background, or only its highlights with `overlay` |
+| Wave / Pattern | Sine, Bpm, Wavesins, Lake, Plasma, Twinkle Up (time-driven), Percent, Solid Pattern, Solid Pattern Tri |
+| Motion | Saw, Bands, Stream, Stream 2, Gradient, Loading, Running Dual, Flow, Railway (time-driven), Tri Wipe |
+| Highlights | Two Dots, Lightning, Spots, Spots Fade, Glitter — each draws over a background, or only its highlights with `overlay` — and Solid Glitter |
 
 Iterate all effects at runtime:
 
@@ -162,15 +162,16 @@ comet above changes color as it travels. Effects that cycle the hue wheel
 (Rainbow, Rainbow Cycle, the random-color effects) cycle through the palette
 instead. Secondary and background colors stay as given, and effects with fixed
 colors of their own (Circus Combustus, Chase White, Running Red Blue, Merry
-Christmas, Halloween, Rainbow Fireworks) and Running Random 2, whose colors
-are random RGB, ignore the palette. Without a palette every effect draws
-exactly as before.
+Christmas, Halloween, Rainbow Fireworks), those whose colors are random RGB
+(Running Random 2, Stream 2) and those that draw their own (Solid Pattern Tri,
+Solid Glitter) ignore the palette; `Effect::uses_palette` says which. Without a
+palette every effect draws exactly as before.
 
 ---
 
 ## Terminal simulator
 
-Not sure which effect you want? Run the built-in terminal simulator to preview all 88 effects live in your terminal — no hardware needed:
+Not sure which effect you want? Run the built-in terminal simulator to preview all 91 effects live in your terminal — no hardware needed:
 
 ```sh
 cargo run --example terminal_sim
